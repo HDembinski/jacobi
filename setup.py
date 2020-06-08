@@ -11,10 +11,10 @@ with open("src/jacobi/__init__.py") as f:
 
 ext_modules = [
     Extension(
-        "_cpp",
+        "jacobi._cpp",
         # Sort input source files to ensure bit-for-bit reproducible builds
         # (https://github.com/pybind/python_example/pull/53)
-        sorted(["src/main.cpp"]),
+        sorted(["src/jacobi/main.cpp"]),
         include_dirs=[
             # Path to pybind11 headers
             "extern/pybind11/include",

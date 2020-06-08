@@ -8,3 +8,6 @@ _generate
 build
 __pycache__
 Pipfile.lock
+.eggs
+py37
+var
