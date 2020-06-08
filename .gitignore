@@ -7,3 +7,4 @@ _build
 _generate
 build
 __pycache__
+Pipfile.lock
