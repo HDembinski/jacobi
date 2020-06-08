@@ -12,3 +12,4 @@ Pipfile.lock
 py37
 var
 .pytest_cache
+notebook/.ipynb_checkpoints
