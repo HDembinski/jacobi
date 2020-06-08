@@ -1,3 +1,4 @@
-# Jacobi
+Jacobi
+======
 
 Compute numerical derivatives.
