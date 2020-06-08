@@ -11,3 +11,4 @@ Pipfile.lock
 .eggs
 py37
 var
+.pytest_cache

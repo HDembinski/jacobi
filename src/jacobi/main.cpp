@@ -7,5 +7,5 @@ int add(int i, int j) {
 namespace py = pybind11;
 
 PYBIND11_MODULE(_cpp, m) {
-    m.def("add", &add);
+    m.def("complex_step_derivative", &add);
 }
