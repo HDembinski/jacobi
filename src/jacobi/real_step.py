@@ -1,3 +1,7 @@
+# TODO: compute second derivative and optimal step size based on that
+#   http://web.media.mit.edu/~crtaylor/calculator.html
+#   h = 2 sqrt(eps * abs(f(x) / f''(x))) for f''(x) != 0
+
 import numpy as np
 
 any = np.any
@@ -56,9 +60,9 @@ def jacobi(f, x, return_error=False):
                     x3 = x2[m2]
                     assert len(x3) > 0
                     if return_error:
-                        r3, e3 = forward(f, x3, dir=-1, return_error=True)
+                        r3, e3 = forward(f, x3, return_error=True, dir=-1)
                     else:
-                        r3 = forward(f, x3, dir=-1, return_error=False)
+                        r3 = forward(f, x3, return_error=False, dir=-1)
                     r2[m2] = r3
                     if return_error:
                         e2[m2] = e3
@@ -116,8 +120,8 @@ def _forward(f, x, h, dir, return_error):
 
         r2 = 22.0 / 3.0 * (fd - fc) - 62.0 / 3.0 * (fc - fb) + 52.0 / 3.0 * (fb - fa)
 
-        # round-off error estimate TODO
-        e = (abs(fa) + abs(fb) + abs(fc) + abs(fd)) * eps
+        # round-off error estimate
+        e = (20 * abs(fa) + 40 * abs(fb) + 30 * abs(fc) + 8 * abs(fd)) * eps
         dy = max(abs(r1), abs(r2)) / h * abs(x) / h * eps
 
         # result, estimated truncation error, estimated rounding error
@@ -171,7 +175,7 @@ def central(f, x, h=None, return_error=False):
     return r, e
 
 
-def forward(f, x, h=None, dir=1, return_error=False):
+def forward(f, x, h=None, return_error=False, dir=1):
     x = np.asarray(x, float)
     dim = x.ndim
     if dim == 0:

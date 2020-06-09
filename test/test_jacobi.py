@@ -101,31 +101,31 @@ def test_real_step_central():
 def test_real_step_forward(dir):
     from jacobi.real_step import forward
 
-    y, ye = forward(np.exp, 0, dir=dir, return_error=True)
+    y, ye = forward(np.exp, 0, return_error=True, dir=dir)
     assert y == approx(1)
     assert ye == approx(0, abs=1e-5)
 
-    y = forward(np.exp, 1, dir=dir, return_error=False)
+    y = forward(np.exp, 1, return_error=False, dir=dir)
     assert y == approx(np.exp(1))
 
-    y, ye = forward(np.exp, [1, 2, 3], dir=dir, return_error=True)
+    y, ye = forward(np.exp, [1, 2, 3], return_error=True, dir=dir)
     assert_allclose(y, np.exp([1, 2, 3]), atol=1e-6)
     assert_allclose(ye, [0, 0, 0], atol=1e-4)
 
-    y, ye = forward(f1, [1, 2, 3], dir=dir, return_error=True)
+    y, ye = forward(f1, [1, 2, 3], return_error=True, dir=dir)
     assert_allclose(y, [2, 4, 6], atol=1e-6)
     assert_allclose(ye, [0, 0, 0], atol=1e-4)
 
-    y, ye = forward(f2, [1, 2, 3], dir=dir, return_error=True)
+    y, ye = forward(f2, [1, 2, 3], return_error=True, dir=dir)
     assert_allclose(y, [0, 0, 0])
     assert_allclose(ye, [0, 0, 0])
 
-    y, ye = forward(f3, [1, 2, 3], dir=dir, return_error=True)
+    y, ye = forward(f3, [1, 2, 3], return_error=True, dir=dir)
     assert_allclose(y, [np.nan, 0, 0])
     assert_allclose(ye, [np.nan, 0, 0])
 
     with np.errstate(invalid="ignore"):
-        y, ye = forward(np.sqrt, [0, 1, 2, 0], dir=dir, return_error=True)
+        y, ye = forward(np.sqrt, [0, 1, 2, 0], return_error=True, dir=dir)
     assert_allclose(y[1:-1], [0.5, 0.5 * 2.0 ** -0.5], atol=1e-7)
     assert_allclose(ye[1:-1], [0, 0], atol=1e-5)
     if dir == 1:
@@ -135,7 +135,7 @@ def test_real_step_forward(dir):
         assert np.isnan(y[0]) and np.isnan(y[-1])
 
     with np.errstate(invalid="ignore"):
-        y, ye = forward(f4, [0.1, 0.5, 1], dir=dir, return_error=True)
+        y, ye = forward(f4, [0.1, 0.5, 1], return_error=True, dir=dir)
     assert_allclose(y[:2], df4([0.1, 0.5]), atol=1e-5)
     assert_allclose(ye[:2], [0, 0], atol=1e-4)
     if dir == -1:
@@ -143,7 +143,7 @@ def test_real_step_forward(dir):
     else:
         assert np.isnan(y[2])
 
-    y, ye = forward(f5, [1, 2, 3], dir=dir, return_error=True)
+    y, ye = forward(f5, [1, 2, 3], return_error=True, dir=dir)
     assert_allclose(y, [[2, 4, 6], [2, 4, 6]], atol=1e-5)
     assert_allclose(ye, [[0, 0, 0], [0, 0, 0]], atol=1e-5)
 
