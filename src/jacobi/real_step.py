@@ -1,12 +1,14 @@
 import numpy as np
 
-eps = np.finfo(float).eps
-sqrt_eps = np.sqrt(eps)
 any = np.any
 abs = np.abs
 max = np.maximum
 abs = np.abs
 any = np.any
+sqrt = np.sqrt
+
+eps = np.finfo(float).eps
+default_rel_step = eps ** 0.5
 
 
 class ErrorCounter:
@@ -79,44 +81,49 @@ def _central(f, x, h, return_error):
     # assumes h > 0
 
     fa = f(x - h)
-    fb = f(x - 0.5 * h)
-    fc = f(x + 0.5 * h)
     fd = f(x + h)
 
     r1 = 0.5 * (fd - fa)
-    # higher order estimate
-    r2 = (4.0 / 3.0) * (fc - fb) - (1.0 / 3.0) * r1
 
     if return_error:
+        fb = f(x - 0.5 * h)
+        fc = f(x + 0.5 * h)
+
+        r2 = (4.0 / 3.0) * (fc - fb) - (1.0 / 3.0) * r1
+
         # round-off error estimate
-        e = (2.0 * (abs(fb) + abs(fc)) + abs(fa) + abs(fd)) * eps
+        e = (1.5 * (abs(fb) + abs(fc)) + 0.5 * (abs(fa) + abs(fd))) * eps
         dy = max(abs(r1), abs(r2)) / h * abs(x) / h * eps
 
         # result, estimated truncation error, estimated rounding error
-        return r2 / h, abs((r2 - r1) / h), e / h + dy
-    return r2 / h
+        return r2 / h, abs(r2 - r1) / h, e / h + dy
+
+    return r1 / h
 
 
 def _forward(f, x, h, dir, return_error):
     # assumes h > 0
 
     hd = h * dir
-    fa = f(x + 0.25 * hd)
     fb = f(x + 0.5 * hd)
-    fc = f(x + 0.75 * hd)
     fd = f(x + hd)
 
     r1 = 2.0 * (fd - fb)
-    r2 = 22.0 / 3.0 * (fd - fc) - 62.0 / 3.0 * (fc - fb) + 52.0 / 3.0 * (fb - fa)
 
     if return_error:
-        # round-off error estimate
-        e = (20 * abs(fa) + 40 * abs(fb) + 30 * abs(fc) + 8 * abs(fd)) * eps
+        fa = f(x + 0.25 * hd)
+        fc = f(x + 0.75 * hd)
+
+        r2 = 22.0 / 3.0 * (fd - fc) - 62.0 / 3.0 * (fc - fb) + 52.0 / 3.0 * (fb - fa)
+
+        # round-off error estimate TODO
+        e = (abs(fa) + abs(fb) + abs(fc) + abs(fd)) * eps
         dy = max(abs(r1), abs(r2)) / h * abs(x) / h * eps
 
         # result, estimated truncation error, estimated rounding error
-        return r2 / hd, abs((r2 - r1) / h), e / h + dy
-    return r2 / hd
+        return r2 / hd, abs(r2 - r1) / h, e / h + dy
+
+    return r1 / hd
 
 
 def central(f, x, h=None, return_error=False):
@@ -126,10 +133,12 @@ def central(f, x, h=None, return_error=False):
         x.shape = (1,)
 
     if h is None:
-        h = np.empty_like(x)
-        m = x != 0
-        h[m] = x[m] * sqrt_eps
-        h[~m] = sqrt_eps
+        h = np.abs(x) * default_rel_step  # h must be positive
+        h[x == 0] = default_rel_step
+    else:
+        h = np.asarray(h, float)
+        if h.ndim == 0:
+            h = h * np.ones_like(x)
 
     if not return_error:
         r = _central(f, x, h, False)
@@ -140,21 +149,21 @@ def central(f, x, h=None, return_error=False):
     r, et, er = _central(f, x, h, True)
     e = et + er
 
-    with np.errstate(invalid="ignore"):
-        m = (er < et) & (er > 0)
-
-    if any(m):
-        ho = h[m] * (er[m] / (2 * et[m])) ** (1.0 / 3.0)
-        xo = x[m]
-        ro, eto, ero = _central(f, xo, ho, True)
-        eo = eto + ero
-        m2 = (eo < e[m]) & (abs(ro - r[m]) < 4 * e[m])
-        ro = ro[m2]
-        eo = eo[m2]
-        m[m] = m2
-        if any(m):
-            r[m] = ro
-            e[m] = eo
+    # with np.errstate(invalid="ignore"):
+    #     m = (er < et) & (er > 0)
+    #
+    # if any(m):
+    #     ho = h[m] * (er[m] / (2 * et[m])) ** (1.0 / 3.0)
+    #     xo = x[m]
+    #     ro, eto, ero = _central(f, xo, ho, True)
+    #     eo = eto + ero
+    #     m2 = (eo < e[m]) & (abs(ro - r[m]) < 4 * e[m])
+    #     ro = ro[m2]
+    #     eo = eo[m2]
+    #     m[m] = m2
+    #     if any(m):
+    #         r[m] = ro
+    #         e[m] = eo
 
     if dim == 0 and r.shape == (1,):
         r.shape = ()
@@ -163,20 +172,18 @@ def central(f, x, h=None, return_error=False):
 
 
 def forward(f, x, h=None, dir=1, return_error=False):
-    abs = np.abs
-    any = np.any
-    sqrt = np.sqrt
-
     x = np.asarray(x, float)
     dim = x.ndim
     if dim == 0:
         x.shape = (1,)
 
     if h is None:
-        h = np.empty_like(x)
-        m = x != 0
-        h[m] = x[m] * sqrt_eps
-        h[~m] = sqrt_eps
+        h = np.abs(x) * default_rel_step  # sign of h must be positive
+        h[x == 0] = default_rel_step
+    else:
+        h = np.asarray(h, float)
+        if h.ndim == 0:
+            h = h * np.ones_like(x)
 
     if not return_error:
         r = _central(f, x, h, False)
@@ -187,21 +194,21 @@ def forward(f, x, h=None, dir=1, return_error=False):
     r, et, er = _forward(f, x, h, dir, True)
     e = et + er
 
-    with np.errstate(invalid="ignore"):
-        m = (er < et) & (er > 0)
-
-    if any(m):
-        ho = h[m] * sqrt(er[m] / et[m])
-        xo = x[m]
-        ro, eto, ero = _forward(f, xo, ho, dir, True)
-        eo = eto + ero
-        m2 = (eo < e[m]) & (abs(ro - r[m]) < 4 * e[m])
-        ro = ro[m2]
-        eo = eo[m2]
-        m[m] = m2
-        if any(m):
-            r[m] = ro
-            e[m] = eo
+    # with np.errstate(invalid="ignore"):
+    #     m = (er < et) & (er > 0)
+    #
+    # if any(m):
+    #     ho = h[m] * sqrt(er[m] / et[m])
+    #     xo = x[m]
+    #     ro, eto, ero = _forward(f, xo, ho, dir, True)
+    #     eo = eto + ero
+    #     m2 = (eo < e[m]) & (abs(ro - r[m]) < 4 * e[m])
+    #     ro = ro[m2]
+    #     eo = eo[m2]
+    #     m[m] = m2
+    #     if any(m):
+    #         r[m] = ro
+    #         e[m] = eo
 
     if dim == 0 and r.shape == (1,):
         r.shape = ()
