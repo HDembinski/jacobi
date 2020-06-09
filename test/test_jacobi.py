@@ -34,6 +34,16 @@ def f5(x):
     return np.ones(2)[:, np.newaxis] * x ** 2
 
 
+def f6(x):
+    x = np.asarray(x)
+    return np.mean(x ** 2, axis=1)
+
+
+def df6(x):
+    x = np.asarray(x)
+    return np.mean(2 * x, axis=1)
+
+
 def test_complex_step_jacobi():
     from jacobi.complex_step import jacobi
 
@@ -59,6 +69,9 @@ def test_complex_step_jacobi():
 
     y = jacobi(f5, [1, 2, 3])
     assert_allclose(y, [[2, 4, 6], [2, 4, 6]])
+
+    y = jacobi(f6, [[1, 2, 3], [2, 3, 4]])
+    assert_allclose(y, df6([[1, 2, 3], [2, 3, 4]]))
 
 
 def test_real_step_central():
@@ -95,6 +108,9 @@ def test_real_step_central():
     y, ye = central(f5, [1, 2, 3], return_error=True)
     assert_allclose(y, [[2, 4, 6], [2, 4, 6]])
     assert_allclose(ye, [[0, 0, 0], [0, 0, 0]], atol=1e-6)
+
+    y = central(f6, [[1, 2, 3], [2, 3, 4]])
+    assert_allclose(y, df6([[1, 2, 3], [2, 3, 4]]))
 
 
 @pytest.mark.parametrize("dir", (-1, 1))
