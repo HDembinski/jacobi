@@ -1,6 +1,10 @@
-# TODO: compute second derivative and optimal step size based on that
+# TODO:
+# - compute second derivative and optimal step size based on that
 #   http://web.media.mit.edu/~crtaylor/calculator.html
 #   h = 2 sqrt(eps * abs(f(x) / f''(x))) for f''(x) != 0
+#   https://en.wikipedia.org/wiki/Numerical_differentiation
+# - Support arbitrary functons ℝⁱ → ℝⁿ
+#   - support axis keyword
 
 import numpy as np
 
