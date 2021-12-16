@@ -74,42 +74,42 @@ def test_complex_step_jacobi():
     assert_allclose(y, df6([[1, 2, 3], [2, 3, 4]]))
 
 
-def test_real_step_central():
-    from jacobi.real_step import central
+def test_real_step_jacobi():
+    from jacobi.real_step import jacobi
 
-    y, ye = central(np.exp, 0, return_error=True)
+    y, ye = jacobi(np.exp, 0)
     assert y == approx(1)
     assert ye == approx(0, abs=1e-6)
 
-    y = central(np.exp, 1, return_error=False)
+    y = jacobi(np.exp, 1)
     assert y == approx(np.exp(1))
 
-    y, ye = central(np.exp, [1, 2, 3], return_error=True)
+    y, ye = jacobi(np.exp, [1, 2, 3])
     assert_allclose(y, np.exp([1, 2, 3]))
     assert_allclose(ye, [0, 0, 0], atol=1e-6)
 
-    y, ye = central(f1, [1, 2, 3], return_error=True)
+    y, ye = jacobi(f1, [1, 2, 3])
     assert_allclose(y, [2, 4, 6])
     assert_allclose(ye, [0, 0, 0], atol=1e-6)
 
-    y, ye = central(f2, [1, 2, 3], return_error=True)
+    y, ye = jacobi(f2, [1, 2, 3])
     assert_allclose(y, [0, 0, 0])
     assert_allclose(ye, [0, 0, 0])
 
-    y, ye = central(f3, [1, 2, 3], return_error=True)
+    y, ye = jacobi(f3, [1, 2, 3])
     assert_allclose(y, [np.nan, 0, 0])
     assert_allclose(ye, [np.nan, 0, 0])
 
     with np.errstate(invalid="ignore"):
-        y, ye = central(np.sqrt, [0, 1, 2, 0], return_error=True)
+        y, ye = jacobi(np.sqrt, [0, 1, 2, 0])
     assert_allclose(y, [np.nan, 0.5, 0.5 * 2.0 ** -0.5, np.nan])
     assert_allclose(ye, [np.nan, 0, 0, np.nan], atol=1e-6)
 
-    y, ye = central(f5, [1, 2, 3], return_error=True)
+    y, ye = jacobi(f5, [1, 2, 3])
     assert_allclose(y, [[2, 4, 6], [2, 4, 6]])
     assert_allclose(ye, [[0, 0, 0], [0, 0, 0]], atol=1e-6)
 
-    y = central(f6, [[1, 2, 3], [2, 3, 4]])
+    y = jacobi(f6, [[1, 2, 3], [2, 3, 4]])
     assert_allclose(y, df6([[1, 2, 3], [2, 3, 4]]))
 
 
@@ -117,7 +117,7 @@ def test_real_step_central():
 def test_real_step_forward(dir):
     from jacobi.real_step import forward
 
-    y, ye = forward(np.exp, 0, return_error=True, dir=dir)
+    y, ye = forward(np.exp, 0, dir=dir)
     assert y == approx(1)
     assert ye == approx(0, abs=1e-5)
 
