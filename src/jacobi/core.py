@@ -1,128 +1,93 @@
 import numpy as np
 
 
-def _steps(p, h0=0.125, factor=0.5):
-    eps = np.finfo(float).resolution
+def _steps(p, h0, factor, maxiter):
     h = p * h0
     if h == 0:
         h = h0
-    n = int(np.log(eps) / np.log(h0 ** 2)) + 1
-    return h * factor ** np.arange(n)
+    return h * factor ** np.arange(maxiter)
 
 
-def _fodd(f, x, p):
-    return 0.5 * (f(x, p) - f(x, -p))
+def _central(f, x, i, h):
+    xp = x.copy()
+    xm = x.copy()
+    xp[i] += h
+    xm[i] -= h
+    return (f(x + h) - f(x - h)) * (0.5 / h)
 
 
-def _central(f, x, p, h):
-    hinv = 1.0 / h
-    return _fodd(f, x, p + h) * hinv
+def jacobi(
+    f,
+    x,
+    *,
+    rtol=0,
+    maxiter=10,
+    step=(0.5, 0.3090169943749474),
+    mask=None,
+    diagnostic=None
+):
+    assert maxiter > 0
 
-
-def vjacobi(f, x, p, *, rtol=None, maxiter=None):
+    squeeze = np.ndim(x) == 0
     x = np.atleast_1d(x)
+    x_shape = np.shape(x)
 
-    shape = np.shape(x)
+    x_indices = np.arange(len(x))
+    if mask is not None:
+        mask = np.asarray(mask, dtype=bool)
+        x_indices = x_indices[mask]
 
-    h = _steps(p)
-    todo = np.ones(shape, dtype=bool)
+    # TODO fill diagnostic
 
-    eps = np.finfo(float).resolution
-    if rtol is None:
-        rtol = 10 * eps
-    else:
-        rtol = max(rtol, 10 * eps)
+    jac = []
+    err = []
+    for k in x_indices:
+        h = _steps(x[k], *step, maxiter)
 
-    fd = []
-    for i, hi in enumerate(h):
-        fdi = _central(f, x[todo], p, hi)
-        fd.append(fdi)
+        r = np.atleast_1d(_central(f, x, k, h[0]))
+        r_shape = np.shape(r)
+        re = np.full(r_shape, np.inf)
+        todo = np.ones(r_shape, dtype=bool)
+        fd = [r]
 
-        if i == 0:
-            f_shape = np.shape(fdi)
-            # maybe this can be relaxed later
-            assert f_shape == shape
-            r = np.empty(f_shape)
-            re = np.full(f_shape, np.inf)
-            r[:] = fdi
-            continue
+        squeeze &= r_shape == x_shape
 
-        # polynomial fit with one extra degree of freedom
-        q, C = np.polyfit(h[: i + 1] ** 2, fd, i - 1, rcond=None, cov=True)
-        ri = q[-1]
-        # pulls have roughly unit variance, however,
-        # the pull distribution is not gaussian and looks
-        # more like student's t
-        rei = np.maximum(C[-1, -1] ** 0.5, eps * np.abs(ri))
+        for i in range(1, len(h)):
+            fdi = np.atleast_1d(_central(f, x, k, h[i]))
+            fd.append(fdi[todo])
 
-        # update estimates that have improved (smaller error)
-        sub_todo = rei < re[todo]
-        todo1 = todo.copy()
-        todo[todo1] = sub_todo
-        r[todo] = ri[sub_todo]
-        re[todo] = rei[sub_todo]
+            # polynomial fit with one extra degree of freedom
+            grad = min(i - 1, 3)
+            start = i - (grad + 1)
+            stop = i + 1
+            q, c = np.polyfit(
+                h[start:stop] ** 2, fd[start:], grad, rcond=None, cov=True
+            )
+            ri = q[-1]
+            # pulls have roughly unit variance, however,
+            # the pull distribution is not gaussian and looks
+            # more like student's t
+            rei = c[-1, -1] ** 0.5
 
-        if maxiter and i >= maxiter:
-            break
+            # update estimates that have significantly smaller error
+            sub_todo = rei < (re[todo] * 2 * step[1] ** 2)
+            todo1 = todo.copy()
+            todo[todo1] = sub_todo
+            r[todo] = ri[sub_todo]
+            re[todo] = rei[sub_todo]
 
-        # do not improve estimates further which meet the tolerance
-        sub_todo &= rei > rtol * np.abs(ri)
-        todo[todo1] = sub_todo
+            # do not improve estimates further which meet the tolerance
+            if rtol > 0:
+                sub_todo &= rei > rtol * np.abs(ri)
+                todo[todo1] = sub_todo
 
-        if np.sum(todo) == 0:
-            break
+            if np.sum(todo) == 0:
+                break
 
-        # shrink previous vectors of estimates
-        fd = [fdi[sub_todo] for fdi in fd]
+            # shrink previous vectors of estimates
+            fd = [fdi[sub_todo] for fdi in fd]
 
-    return r, re
+        jac.append(np.squeeze(r) if squeeze else r)
+        err.append(np.squeeze(re) if squeeze else re)
 
-
-def jacobi(f, p, *, rtol=None, maxiter=None):
-    h = _steps(p)
-
-    eps = np.finfo(float).resolution
-    if rtol is None:
-        rtol = 10 * eps
-    else:
-        rtol = max(rtol, 10 * eps)
-
-    fd = []
-    for i, hi in enumerate(h):
-        fdi = _central(f, p, hi)
-        fd.append(fdi)
-
-        if i == 0:
-            f_shape = np.shape(fdi)
-            r = np.empty(f_shape)
-            re = np.full(f_shape, np.inf)
-            r[:] = fdi
-            continue
-
-        # polynomial fit with one extra degree of freedom
-        q, C = np.polyfit(h[: i + 1] ** 2, fd, i - 1, rcond=None, cov=True)
-        ri = q[-1]
-        # pulls have roughly unit variance, however,
-        # the pull distribution is not gaussian and looks
-        # more like student's t
-        rei = np.maximum(C[-1, -1] ** 0.5, eps * np.abs(ri))
-
-        # update estimates that have improved (smaller error)
-        better = rei < re
-        r[better] = ri[better]
-        re[better] = rei[better]
-
-        if maxiter and i >= maxiter:
-            break
-
-        # do not improve estimates further which meet the tolerance
-        better &= rei > rtol * np.abs(ri)
-        todo[todo1] = sub_todo
-
-        if np.sum(todo) == 0:
-            break
-
-        # shrink previous vectors of estimates
-        fd = [fdi[sub_todo] for fdi in fd]
-
-    return r, re
+    return np.transpose(jac), np.transpose(err)
