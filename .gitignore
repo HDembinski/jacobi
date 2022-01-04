@@ -11,5 +11,6 @@ Pipfile.lock
 .eggs
 py37
 var
+venv
 .pytest_cache
 notebook/.ipynb_checkpoints

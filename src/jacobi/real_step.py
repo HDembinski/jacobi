@@ -8,56 +8,70 @@ def _steps(p, h0, factor, maxiter):
     return h * factor ** np.arange(maxiter)
 
 
-def _central(f, x, i, h):
+def _central(f, x, i, h, args):
     xp = x.copy()
     xm = x.copy()
     xp[i] += h
     xm[i] -= h
-    return (f(x + h) - f(x - h)) * (0.5 / h)
+    return (f(xp, *args) - f(xm, *args)) * (0.5 / h)
 
 
 def jacobi(
     f,
     x,
-    *,
+    *args,
     rtol=0,
     maxiter=10,
-    step=(0.5, 0.3090169943749474),
+    maxgrad=3,
+    step=(0.125, 0.3090169943749474),
     mask=None,
-    diagnostic=None
+    diagnostic=None,
 ):
     assert maxiter > 0
+    assert maxgrad >= 0
+    assert 0 < step[0] < 1
+    assert 0 < step[1] < 1
 
     squeeze = np.ndim(x) == 0
     x = np.atleast_1d(x)
-    x_shape = np.shape(x)
 
     x_indices = np.arange(len(x))
     if mask is not None:
         mask = np.asarray(mask, dtype=bool)
         x_indices = x_indices[mask]
 
-    # TODO fill diagnostic
+    if isinstance(diagnostic, dict):
+        diagnostic.clear()
+        diagnostic["iteration"] = np.zeros(len(x_indices), dtype=np.uint8)
 
-    jac = []
-    err = []
-    for k in x_indices:
+    for ik, k in enumerate(x_indices):
         h = _steps(x[k], *step, maxiter)
 
-        r = np.atleast_1d(_central(f, x, k, h[0]))
+        r = np.atleast_1d(_central(f, x, k, h[0], args))
         r_shape = np.shape(r)
         re = np.full(r_shape, np.inf)
         todo = np.ones(r_shape, dtype=bool)
         fd = [r]
 
-        squeeze &= r_shape == x_shape
+        if ik == 0:
+            # squeeze &= r_shape == x_shape
+            jac = np.empty(r_shape + (len(x_indices),), dtype=r.dtype)
+            err = np.empty(r_shape + (len(x_indices),), dtype=r.dtype)
+
+            if diagnostic:
+                diagnostic["call"] = np.full(
+                    r_shape + (len(x_indices),), 2, dtype=np.uint8
+                )
 
         for i in range(1, len(h)):
-            fdi = np.atleast_1d(_central(f, x, k, h[i]))
-            fd.append(fdi[todo])
+            fdi = np.atleast_1d(_central(f, x, k, h[i], args))
+            fd.append(fdi if i == 1 else fdi[todo])
+            if diagnostic:
+                diagnostic["call"][todo, ik] += 2
+                diagnostic["iteration"][ik] += 1
 
             # polynomial fit with one extra degree of freedom
-            grad = min(i - 1, 3)
+            grad = min(i - 1, maxgrad)
             start = i - (grad + 1)
             stop = i + 1
             q, c = np.polyfit(
@@ -87,7 +101,11 @@ def jacobi(
             # shrink previous vectors of estimates
             fd = [fdi[sub_todo] for fdi in fd]
 
-        jac.append(np.squeeze(r) if squeeze else r)
-        err.append(np.squeeze(re) if squeeze else re)
+        jac[..., ik] = r
+        err[..., ik] = re
 
-    return np.transpose(jac), np.transpose(err)
+    if squeeze:
+        if diagnostic:
+            diagnostic["call"] = np.squeeze(diagnostic["call"])
+        return np.squeeze(jac), np.squeeze(err)
+    return jac, err
