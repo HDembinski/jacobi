@@ -33,7 +33,8 @@ def jacobi(
     assert 0 < step[1] < 1
 
     squeeze = np.ndim(x) == 0
-    x = np.atleast_1d(x)
+    x = np.atleast_1d(x).astype(float)
+    assert x.ndim < 2
 
     x_indices = np.arange(len(x))
     if mask is not None:
@@ -44,27 +45,27 @@ def jacobi(
         diagnostic.clear()
         diagnostic["iteration"] = np.zeros(len(x_indices), dtype=np.uint8)
 
+    nx = len(x_indices)
     for ik, k in enumerate(x_indices):
         h = _steps(x[k], *step, maxiter)
 
         r = np.atleast_1d(_central(f, x, k, h[0], args))
         r_shape = np.shape(r)
-        re = np.full(r_shape, np.inf)
-        todo = np.ones(r_shape, dtype=bool)
+        n = np.prod(r_shape)
+        r.shape = n
+        re = np.full(n, np.inf)
+        todo = np.ones(n, dtype=bool)
         fd = [r]
 
         if ik == 0:
-            # squeeze &= r_shape == x_shape
-            jac = np.empty(r_shape + (len(x_indices),), dtype=r.dtype)
-            err = np.empty(r_shape + (len(x_indices),), dtype=r.dtype)
+            jac = np.empty(r_shape + (nx,), dtype=r.dtype)
+            err = np.empty(r_shape + (nx,), dtype=r.dtype)
 
             if diagnostic:
-                diagnostic["call"] = np.full(
-                    r_shape + (len(x_indices),), 2, dtype=np.uint8
-                )
+                diagnostic["call"] = np.full((n, nx), 2, dtype=np.uint8)
 
         for i in range(1, len(h)):
-            fdi = np.atleast_1d(_central(f, x, k, h[i], args))
+            fdi = np.atleast_1d(_central(f, x, k, h[i], args).reshape(-1))
             fd.append(fdi if i == 1 else fdi[todo])
             if diagnostic:
                 diagnostic["call"][todo, ik] += 2
@@ -101,11 +102,15 @@ def jacobi(
             # shrink previous vectors of estimates
             fd = [fdi[sub_todo] for fdi in fd]
 
-        jac[..., ik] = r
-        err[..., ik] = re
+        jac[..., ik] = r.reshape(r_shape)
+        err[..., ik] = re.reshape(r_shape)
+
+    if diagnostic:
+        diagnostic["call"].shape = r_shape + (nx,)
 
     if squeeze:
         if diagnostic:
             diagnostic["call"] = np.squeeze(diagnostic["call"])
-        return np.squeeze(jac), np.squeeze(err)
+        jac = np.squeeze(jac)
+        err = np.squeeze(err)
     return jac, err

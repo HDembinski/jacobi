@@ -2,9 +2,11 @@ import numpy as np
 
 
 def jacobi(f, x, *args):
-    step = np.finfo(float).eps
-    cx = np.asarray(x, dtype=complex)
+    squeeze = np.ndim(x)
+    cx = np.atleast_1d(x).astype(complex)
     assert cx.ndim < 2
+
+    step = np.finfo(float).eps
     if cx.ndim == 1:
         nx = cx.shape[0]
         cx.imag[0] = step
@@ -20,4 +22,7 @@ def jacobi(f, x, *args):
             cx.imag[i] = step
             t[..., i] = np.imag(f(cx, *args)) / step
         r = t
-    return r
+
+    if squeeze:
+        r = np.squeeze(r)
+    return r, r * step
