@@ -113,4 +113,5 @@ def jacobi(
             diagnostic["call"] = np.squeeze(diagnostic["call"])
         jac = np.squeeze(jac)
         err = np.squeeze(err)
+
     return jac, err
