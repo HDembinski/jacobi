@@ -20,11 +20,11 @@ def jacobi(
     f,
     x,
     *args,
+    mask=None,
     rtol=0,
     maxiter=10,
     maxgrad=3,
     step=(0.125, 0.3090169943749474),
-    mask=None,
     diagnostic=None,
 ):
     assert maxiter > 0
