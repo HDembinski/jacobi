@@ -7,7 +7,7 @@ Fast numerical derivatives for real analytic functions with arbitrary round-off 
 - Robustly compute the generalised Jacobi matrix for an arbitrary real analytic mapping of $`\mathcal{R}^k \to \mathcal{R}^{n_1} \times \dots \times \mathcal{R}^{n_\ell}`$
 - Derivative is computed to specified accuracy or until precision of function is reached
 - Robust algorithm based on John D'Errico's DERIVEST: flawlessly works with functions that have large round-off error (internal computation in float32 precision or lower)
-- 100x faster than [numdifftools](https://pypi.org/project/numdifftools/)
+- Up to 100x faster than [numdifftools](https://pypi.org/project/numdifftools/) at equal precision
 - Computes error estimates for derivatives
 - Supports functions with arbitrary auxiliary arguments
 
@@ -34,5 +34,14 @@ plt.plot(x, fdx, ls="--", label="f'(x)")
 plt.legend()
 plt.show()
 ```
-
 ![](doc/_static/example.svg)
+
+## Comparison to numdifftools
+
+#### Speed
+
+![](doc/_static/bench.svg)
+
+#### Precision
+
+![](doc/_static/precision.svg)
