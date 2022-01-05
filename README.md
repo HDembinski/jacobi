@@ -9,8 +9,8 @@ Fast numerical derivatives for real analytic functions with arbitrary round-off 
 - Robust algorithm based on John D'Errico's [DERIVEST](https://de.mathworks.com/matlabcentral/fileexchange/13490-adaptive-robust-numerical-differentiation): flawlessly works with functions that have large round-off error (internal computation in float32 precision or lower)
 - Up to 100x faster than [numdifftools](https://pypi.org/project/numdifftools/) at equal precision
 - Computes error estimates for derivatives
-- Supports functions with arbitrary auxiliary arguments
-- Lightweight, only depends on numpy
+- Supports arbitrary auxiliary function arguments
+- Lightweight package, only depends on numpy
 
 ## Example
 
@@ -41,8 +41,12 @@ plt.show()
 
 #### Speed
 
+Jacobi makes better use of vectorised computation than numdifftools.
+
 ![](doc/_static/speed.svg)
 
 #### Precision
+
+The machine precision is indicated by the dashed line.
 
 ![](doc/_static/precision.svg)
