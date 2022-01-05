@@ -23,7 +23,7 @@ def jacobi(
     mask=None,
     rtol=0,
     maxiter=10,
-    maxgrad=3,
+    maxgrad=5,
     step=(0.125, 0.3090169943749474),
     diagnostic=None,
 ):
@@ -85,7 +85,7 @@ def jacobi(
             rei = c[-1, -1] ** 0.5
 
             # update estimates that have significantly smaller error
-            sub_todo = rei < (re[todo] * 2 * step[1] ** 2)
+            sub_todo = rei < re[todo]
             todo1 = todo.copy()
             todo[todo1] = sub_todo
             r[todo] = ri[sub_todo]
