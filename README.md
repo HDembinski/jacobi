@@ -4,7 +4,7 @@ Fast numerical derivatives for real analytic functions with arbitrary round-off 
 
 ## Features
 
-- Robustly compute the generalised Jacobi matrix for an arbitrary real analytic mapping of ℝⁿ → ℝⁱ¹ ⨉ ... ⨉ ℝⁱⁿ
+- Robustly compute the generalised Jacobi matrix for an arbitrary real analytic mapping of ℝⁿ → ℝⁱ¹ × ... × ℝⁱⁿ
 - Derivative is computed to specified accuracy or until precision of function is reached
 - Robust algorithm based on John D'Errico's [DERIVEST](https://de.mathworks.com/matlabcentral/fileexchange/13490-adaptive-robust-numerical-differentiation): flawlessly works with functions that have large round-off error (internal computation in float32 precision or lower)
 - Up to 100x faster than [numdifftools](https://pypi.org/project/numdifftools/) at equal precision
