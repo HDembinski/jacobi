@@ -34,7 +34,7 @@ def jacobi(
 
     squeeze = np.ndim(x) == 0
     x = np.atleast_1d(x).astype(float)
-    assert x.ndim < 2
+    assert x.ndim == 1
 
     x_indices = np.arange(len(x))
     if mask is not None:
@@ -49,12 +49,12 @@ def jacobi(
     for ik, k in enumerate(x_indices):
         h = _steps(x[k], *step, maxiter)
 
-        r = np.atleast_1d(_central(f, x, k, h[0], args))
+        r = _central(f, x, k, h[0], args)
         r_shape = np.shape(r)
-        n = np.prod(r_shape)
-        r.shape = n
-        re = np.full(n, np.inf)
-        todo = np.ones(n, dtype=bool)
+        r = np.reshape(r, -1)
+        nr = len(r)
+        re = np.full(nr, np.inf)
+        todo = np.ones(nr, dtype=bool)
         fd = [r]
 
         if ik == 0:
@@ -62,10 +62,10 @@ def jacobi(
             err = np.empty(r_shape + (nx,), dtype=r.dtype)
 
             if diagnostic:
-                diagnostic["call"] = np.full((n, nx), 2, dtype=np.uint8)
+                diagnostic["call"] = np.full((nr, nx), 2, dtype=np.uint8)
 
         for i in range(1, len(h)):
-            fdi = np.atleast_1d(_central(f, x, k, h[i], args).reshape(-1))
+            fdi = np.reshape(_central(f, x, k, h[i], args), -1)
             fd.append(fdi if i == 1 else fdi[todo])
             if diagnostic:
                 diagnostic["call"][todo, ik] += 2

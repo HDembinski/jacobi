@@ -20,6 +20,40 @@ def test_jacobi_squeeze(kind):
     assert ye == approx(0, abs=1e-6)
 
 
+def f5(x):
+    return np.mean(x ** 2)
+
+
+def fd5(x):
+    return 2 * x / len(x)
+
+
+def f6(x):
+    return np.outer(x, x)
+
+
+def fd6(r):
+    assert len(r) == 3
+    x, y, z = r
+    r = np.empty((3, 3, 3))
+    r[..., 0] = [
+        [2 * x, y, z],
+        [y, 0, 0],
+        [z, 0, 0],
+    ]
+    r[..., 1] = [
+        [0, x, 0],
+        [x, 2 * y, z],
+        [0, z, 0],
+    ]
+    r[..., 2] = [
+        [0, 0, x],
+        [0, 0, y],
+        [x, y, 2 * z],
+    ]
+    return r
+
+
 @pytest.mark.parametrize("kind", ("real", "complex"))
 @pytest.mark.parametrize(
     "fn",
@@ -28,15 +62,9 @@ def test_jacobi_squeeze(kind):
         (lambda x: x ** 2, lambda x: np.diagflat(2 * x)),
         (lambda x: np.ones_like(x), lambda x: np.diagflat(np.zeros_like(x))),
         (lambda x: x ** -1, lambda x: np.diagflat(-(x ** -2))),
-        (lambda x: np.sqrt(1 - x), lambda x: np.diagflat(-0.5 / np.sqrt(1 - x))),
-        (
-            lambda x: np.mean(x ** 2, axis=1),
-            lambda x: np.diagflat(np.mean(2 * x, axis=1)),
-        ),
-        (
-            lambda x: np.outer(x, x),
-            lambda x: np.ones(2)[:, np.newaxis] * 2 * x,
-        ),
+        (lambda x: (x + 1) ** 0.5, lambda x: np.diagflat(0.5 * (x + 1) ** -0.5)),
+        (f5, fd5),
+        (f6, fd6),
     ],
 )
 def test_jacobi(kind, fn):
