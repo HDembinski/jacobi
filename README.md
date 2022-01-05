@@ -40,7 +40,7 @@ plt.show()
 
 #### Speed
 
-![](doc/_static/bench.svg)
+![](doc/_static/speed.svg)
 
 #### Precision
 
