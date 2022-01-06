@@ -1,4 +1,0 @@
-Jacobi
-======
-
-Compute numerical derivatives.

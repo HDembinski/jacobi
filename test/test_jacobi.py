@@ -1,218 +1,117 @@
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 import numpy as np
-from pytest import approx
 import pytest
-
-deps = np.finfo(np.float64).eps
-feps = np.finfo(np.float32).eps
+from jacobi import jacobi
 
 
-def f1(x):
-    return x ** 2
-
-
-def f2(x):
-    return np.zeros_like(x)
-
-
-def f3(x):
-    y = np.zeros_like(x)
-    y[0] = np.nan
-    return y
-
-
-def f4(x):
-    x = np.asarray(x)
-    return np.sqrt(1.0 - x)
-
-
-def df4(x):
-    return -0.5 / f4(x)
+def test_squeeze():
+    # also tests promotion of integer argument to float
+    y, ye = jacobi(np.exp, 0)
+    assert_allclose(y, 1)
+    assert_allclose(ye, 0, atol=1e-10)
 
 
 def f5(x):
-    return np.ones(2)[:, np.newaxis] * x ** 2
+    return np.mean(x ** 2)
+
+
+def fd5(x):
+    return 2 * x / len(x)
 
 
 def f6(x):
-    x = np.asarray(x)
-    return np.mean(x ** 2, axis=1)
+    return np.outer(x, x)
 
 
-def df6(x):
-    x = np.asarray(x)
-    return np.mean(2 * x, axis=1)
+def fd6(r):
+    assert len(r) == 3
+    x, y, z = r
+    r = np.empty((3, 3, 3))
+    r[..., 0] = [
+        [2 * x, y, z],
+        [y, 0, 0],
+        [z, 0, 0],
+    ]
+    r[..., 1] = [
+        [0, x, 0],
+        [x, 2 * y, z],
+        [0, z, 0],
+    ]
+    r[..., 2] = [
+        [0, 0, x],
+        [0, 0, y],
+        [x, y, 2 * z],
+    ]
+    return r
 
 
-def test_complex_step_jacobi():
-    from jacobi.complex_step import jacobi
-
-    assert jacobi(np.exp, 0) == approx(1)
-    assert jacobi(np.exp, 1) == approx(np.exp(1))
-
-    y = jacobi(np.exp, [1, 2, 3])
-    assert_allclose(y, np.exp([1, 2, 3]))
-
-    y = jacobi(np.sqrt, [0, 1, 2, 0])
-    assert_allclose(y[1:-1], [0.5, 0.5 * 2 ** -0.5])
-    # y[0] and y[-1] are formally infinite
-    assert_allclose((1.0 / y[0], 1.0 / y[-1]), (0, 0), atol=1e-6)
-
-    y = jacobi(f1, [1, 2, 3])
-    assert_allclose(y, [2, 4, 6])
-
-    y = jacobi(f2, [1, 2, 3])
-    assert_allclose(y, [0, 0, 0])
-
-    y = jacobi(f3, [1, 2, 3])
-    assert_allclose(y, [0, 0, 0])  # gives 0 instead of nan
-
-    y = jacobi(f5, [1, 2, 3])
-    assert_allclose(y, [[2, 4, 6], [2, 4, 6]])
-
-    y = jacobi(f6, [[1, 2, 3], [2, 3, 4]])
-    assert_allclose(y, df6([[1, 2, 3], [2, 3, 4]]))
+@pytest.mark.parametrize(
+    "fn",
+    [
+        (lambda x: 1.0, lambda x: 0.0),
+        (lambda x: np.exp(x), lambda x: np.diagflat(np.exp(x))),
+        (lambda x: x ** 2, lambda x: np.diagflat(2 * x)),
+        (lambda x: np.ones_like(x), lambda x: np.diagflat(np.zeros_like(x))),
+        (lambda x: x ** -1, lambda x: np.diagflat(-(x ** -2))),
+        (lambda x: (x + 1) ** 0.5, lambda x: np.diagflat(0.5 * (x + 1) ** -0.5)),
+        (f5, fd5),
+        (f6, fd6),
+    ],
+)
+def test_jacobi(fn):
+    x = np.array([1, 2, 3], dtype=float)
+    f, fd = fn
+    y, ye = jacobi(f, x)
+    assert_allclose(y, fd(x))
+    assert_allclose(ye, np.zeros_like(y), atol=1e-10)
 
 
-def test_real_step_central():
-    from jacobi.real_step import central
-
-    y, ye = central(np.exp, 0, return_error=True)
-    assert y == approx(1)
-    assert ye == approx(0, abs=1e-6)
-
-    y = central(np.exp, 1, return_error=False)
-    assert y == approx(np.exp(1))
-
-    y, ye = central(np.exp, [1, 2, 3], return_error=True)
-    assert_allclose(y, np.exp([1, 2, 3]))
-    assert_allclose(ye, [0, 0, 0], atol=1e-6)
-
-    y, ye = central(f1, [1, 2, 3], return_error=True)
-    assert_allclose(y, [2, 4, 6])
-    assert_allclose(ye, [0, 0, 0], atol=1e-6)
-
-    y, ye = central(f2, [1, 2, 3], return_error=True)
-    assert_allclose(y, [0, 0, 0])
-    assert_allclose(ye, [0, 0, 0])
-
-    y, ye = central(f3, [1, 2, 3], return_error=True)
-    assert_allclose(y, [np.nan, 0, 0])
-    assert_allclose(ye, [np.nan, 0, 0])
-
-    with np.errstate(invalid="ignore"):
-        y, ye = central(np.sqrt, [0, 1, 2, 0], return_error=True)
-    assert_allclose(y, [np.nan, 0.5, 0.5 * 2.0 ** -0.5, np.nan])
-    assert_allclose(ye, [np.nan, 0, 0, np.nan], atol=1e-6)
-
-    y, ye = central(f5, [1, 2, 3], return_error=True)
-    assert_allclose(y, [[2, 4, 6], [2, 4, 6]])
-    assert_allclose(ye, [[0, 0, 0], [0, 0, 0]], atol=1e-6)
-
-    y = central(f6, [[1, 2, 3], [2, 3, 4]])
-    assert_allclose(y, df6([[1, 2, 3], [2, 3, 4]]))
+def test_abs_at_zero():
+    fp, fpe = jacobi(np.abs, 0)
+    assert_equal(fp, 0)
+    assert_equal(fpe, 0)
 
 
-@pytest.mark.parametrize("dir", (-1, 1))
-def test_real_step_forward(dir):
-    from jacobi.real_step import forward
+def test_method_auto():
+    d = {}
+    fp, fpe = jacobi(lambda x: x, 0, diagnostic=d)
+    assert_equal(d["method"], [0])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
 
-    y, ye = forward(np.exp, 0, return_error=True, dir=dir)
-    assert y == approx(1)
-    assert ye == approx(0, abs=1e-5)
+    fp, fpe = jacobi(lambda x: x if x >= 0 else np.nan, 0, diagnostic=d)
+    assert_equal(d["method"], [1])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
 
-    y = forward(np.exp, 1, return_error=False, dir=dir)
-    assert y == approx(np.exp(1))
+    fp, fpe = jacobi(lambda x: x if x <= 0 else np.nan, 0, diagnostic=d)
+    assert_equal(d["method"], [-1])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
 
-    y, ye = forward(np.exp, [1, 2, 3], return_error=True, dir=dir)
-    assert_allclose(y, np.exp([1, 2, 3]), atol=1e-6)
-    assert_allclose(ye, [0, 0, 0], atol=1e-4)
 
-    y, ye = forward(f1, [1, 2, 3], return_error=True, dir=dir)
-    assert_allclose(y, [2, 4, 6], atol=1e-6)
-    assert_allclose(ye, [0, 0, 0], atol=1e-4)
+@pytest.mark.parametrize("method", (-1, 0, 1))
+def test_method(method):
+    d = {}
+    fp, fpe = jacobi(lambda x: x, 0, method=method, diagnostic=d)
+    assert_equal(d["method"], [method])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
 
-    y, ye = forward(f2, [1, 2, 3], return_error=True, dir=dir)
-    assert_allclose(y, [0, 0, 0])
-    assert_allclose(ye, [0, 0, 0])
-
-    y, ye = forward(f3, [1, 2, 3], return_error=True, dir=dir)
-    assert_allclose(y, [np.nan, 0, 0])
-    assert_allclose(ye, [np.nan, 0, 0])
-
-    with np.errstate(invalid="ignore"):
-        y, ye = forward(np.sqrt, [0, 1, 2, 0], return_error=True, dir=dir)
-    assert_allclose(y[1:-1], [0.5, 0.5 * 2.0 ** -0.5], atol=1e-7)
-    assert_allclose(ye[1:-1], [0, 0], atol=1e-5)
-    if dir == 1:
-        # y[0] and y[-1] are formally infinite
-        assert_allclose((1.0 / y[0], 1.0 / y[-1]), (0, 0), atol=1e-4)
+    fp, fpe = jacobi(lambda x: x if x >= 0 else np.nan, 0, method=method, diagnostic=d)
+    assert_equal(d["method"], [method])
+    if method == 1:
+        assert_allclose(fp, 1)
+        assert_allclose(fpe, 0, atol=1e-10)
     else:
-        assert np.isnan(y[0]) and np.isnan(y[-1])
+        assert_equal(fp, np.nan)
+        assert_equal(fpe, np.inf)
 
-    with np.errstate(invalid="ignore"):
-        y, ye = forward(f4, [0.1, 0.5, 1], return_error=True, dir=dir)
-    assert_allclose(y[:2], df4([0.1, 0.5]), atol=1e-5)
-    assert_allclose(ye[:2], [0, 0], atol=1e-4)
-    if dir == -1:
-        assert 1 / y[2] < 1 / ye[2]  # y[2] is formally infinite
+    fp, fpe = jacobi(lambda x: x if x <= 0 else np.nan, 0, method=method, diagnostic=d)
+    assert_equal(d["method"], [method])
+    if method == -1:
+        assert_allclose(fp, 1)
+        assert_allclose(fpe, 0, atol=1e-10)
     else:
-        assert np.isnan(y[2])
-
-    y, ye = forward(f5, [1, 2, 3], return_error=True, dir=dir)
-    assert_allclose(y, [[2, 4, 6], [2, 4, 6]], atol=1e-5)
-    assert_allclose(ye, [[0, 0, 0], [0, 0, 0]], atol=1e-5)
-
-
-def test_real_step_jacobi():
-    from jacobi.real_step import jacobi
-
-    y, ye = jacobi(np.exp, 0, return_error=True)
-    assert y == approx(1)
-    assert ye == approx(0, abs=1e-6)
-
-    y = jacobi(np.exp, 1, return_error=False)
-    assert y == approx(np.exp(1))
-
-    y, ye = jacobi(np.exp, [1, 2, 3], return_error=True)
-    assert_allclose(y, np.exp([1, 2, 3]))
-    assert_allclose(ye, [0, 0, 0], atol=1e-6)
-
-    y, ye = jacobi(f1, [1, 2, 3], return_error=True)
-    assert_allclose(y, [2, 4, 6])
-    assert_allclose(ye, [0, 0, 0], atol=1e-6)
-
-    y, ye = jacobi(f2, [1, 2, 3], return_error=True)
-    assert_allclose(y, [0, 0, 0])
-    assert_allclose(ye, [0, 0, 0])
-
-    y, ye = jacobi(f3, [1, 2, 3], return_error=True)
-    assert_allclose(y, [np.nan, 0, 0])
-    assert_allclose(ye, [np.nan, 0, 0])
-
-    y, ye = jacobi(np.sqrt, [0, 1, 2], return_error=True)
-    assert_allclose(y[1:], [0.5, 0.5 * 2.0 ** -0.5])
-    assert_allclose(ye[1:], [0, 0], atol=1e-6)
-    assert 1 / y[0] < 1 / ye[0]  # y[0] is formally infinite
-
-    y, ye = jacobi(f4, [0.1, 0.5, 1], return_error=True)
-    assert_allclose(y[:2], df4([0.1, 0.5]), atol=1e-7)
-    assert_allclose(ye[:2], [0, 0], atol=1e-6)
-    assert 1 / y[2] < 1 / ye[2]  # y[2] is formally infinite
-
-    y, ye = jacobi(f5, [1, 2, 3], return_error=True)
-    assert_allclose(y, [[2, 4, 6], [2, 4, 6]])
-    assert_allclose(ye, [[0, 0, 0], [0, 0, 0]], atol=1e-6)
-
-
-@pytest.mark.parametrize("return_error", (False, True))
-def test_real_step_jacobi_wide(return_error):
-    from jacobi.real_step import jacobi
-
-    x = np.linspace(-3, 50)
-    out = jacobi(np.exp, x, return_error=return_error)
-    if return_error:
-        y, ye = out
-    else:
-        y = out
-    assert_allclose(y, np.exp(x))
+        assert_equal(fp, np.nan)
+        assert_equal(fpe, np.inf)

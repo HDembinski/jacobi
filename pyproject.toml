@@ -1,17 +1,10 @@
-[tool.poetry]
-name = "jacobi"
-version = "0.0.1"
-description = "Numerical derivatives"
-authors = ["Hans Dembinski <hans.dembinski@gmail.com>"]
-license = "MIT"
-
-[tool.poetry.dependencies]
-python = "^3.5"
-numpy = "^1.18.5"
-
-[tool.poetry.dev-dependencies]
-pytest = "^5.4.3"
-
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = [
+    "setuptools>=42",
+    "setuptools_scm[toml]>=3.4",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "src/jacobi/_version.py"
