@@ -2,6 +2,8 @@
 MANIFEST
 *.py[cod]
 *.egg-info
+.mypy_cache
+.benchmarks
 .DS_Store
 _build
 _generate

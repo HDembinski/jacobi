@@ -16,7 +16,7 @@ def fp(x):
 
 x = np.linspace(-10, 10, 1000)
 fpx = fp(x)
-fpx1, fpxe1 = jacobi(f, 0, x, maxgrad=3)
+fpx1, fpxe1 = jacobi(f, 0, x)
 fpx2 = Derivative(lambda p: f(p, x))(0)
 
 plt.figure(constrained_layout=True)
@@ -25,6 +25,7 @@ plt.plot(x, np.abs(fpx2 / fpx - 1), ls="--", label="numdifftools")
 plt.title("relative deviation of numerical from true derivative")
 plt.legend(title="f(x) = sin(x)/x", ncol=2)
 plt.semilogy()
-plt.ylim(1e-16, 1e-10)
+plt.ylim(1e-16, 1)
 plt.axhline(np.finfo(float).resolution, color="k", ls="--")
 plt.savefig("doc/_static/precision.svg")
+plt.show()

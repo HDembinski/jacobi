@@ -1,23 +1,14 @@
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 import numpy as np
-from pytest import approx
 import pytest
-
-deps = np.finfo(np.float64).eps
-feps = np.finfo(np.float32).eps
+from jacobi import jacobi
 
 
-@pytest.mark.parametrize("kind", ("real", "complex"))
-def test_jacobi_squeeze(kind):
-    if kind == "real":
-        from jacobi.real_step import jacobi
-    else:
-        from jacobi.complex_step import jacobi
-
+def test_squeeze():
     # also tests promotion of integer argument to float
     y, ye = jacobi(np.exp, 0)
-    assert y == approx(1)
-    assert ye == approx(0, abs=1e-6)
+    assert_allclose(y, 1)
+    assert_allclose(ye, 0, atol=1e-10)
 
 
 def f5(x):
@@ -54,10 +45,10 @@ def fd6(r):
     return r
 
 
-@pytest.mark.parametrize("kind", ("real", "complex"))
 @pytest.mark.parametrize(
     "fn",
     [
+        (lambda x: 1.0, lambda x: 0.0),
         (lambda x: np.exp(x), lambda x: np.diagflat(np.exp(x))),
         (lambda x: x ** 2, lambda x: np.diagflat(2 * x)),
         (lambda x: np.ones_like(x), lambda x: np.diagflat(np.zeros_like(x))),
@@ -67,14 +58,60 @@ def fd6(r):
         (f6, fd6),
     ],
 )
-def test_jacobi(kind, fn):
-    if kind == "real":
-        from jacobi.real_step import jacobi
-    else:
-        from jacobi.complex_step import jacobi
-
+def test_jacobi(fn):
     x = np.array([1, 2, 3], dtype=float)
     f, fd = fn
     y, ye = jacobi(f, x)
     assert_allclose(y, fd(x))
     assert_allclose(ye, np.zeros_like(y), atol=1e-10)
+
+
+def test_abs_at_zero():
+    fp, fpe = jacobi(np.abs, 0)
+    assert_equal(fp, 0)
+    assert_equal(fpe, 0)
+
+
+def test_method_auto():
+    d = {}
+    fp, fpe = jacobi(lambda x: x, 0, diagnostic=d)
+    assert_equal(d["method"], [0])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
+
+    fp, fpe = jacobi(lambda x: x if x >= 0 else np.nan, 0, diagnostic=d)
+    assert_equal(d["method"], [1])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
+
+    fp, fpe = jacobi(lambda x: x if x <= 0 else np.nan, 0, diagnostic=d)
+    assert_equal(d["method"], [-1])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
+
+
+@pytest.mark.parametrize("method", (-1, 0, 1))
+def test_method(method):
+    d = {}
+    fp, fpe = jacobi(lambda x: x, 0, method=method, diagnostic=d)
+    assert_equal(d["method"], [method])
+    assert_allclose(fp, 1)
+    assert_allclose(fpe, 0, atol=1e-10)
+
+    fp, fpe = jacobi(lambda x: x if x >= 0 else np.nan, 0, method=method, diagnostic=d)
+    assert_equal(d["method"], [method])
+    if method == 1:
+        assert_allclose(fp, 1)
+        assert_allclose(fpe, 0, atol=1e-10)
+    else:
+        assert_equal(fp, np.nan)
+        assert_equal(fpe, np.inf)
+
+    fp, fpe = jacobi(lambda x: x if x <= 0 else np.nan, 0, method=method, diagnostic=d)
+    assert_equal(d["method"], [method])
+    if method == -1:
+        assert_allclose(fp, 1)
+        assert_allclose(fpe, 0, atol=1e-10)
+    else:
+        assert_equal(fp, np.nan)
+        assert_equal(fpe, np.inf)
