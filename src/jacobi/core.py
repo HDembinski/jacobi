@@ -1,4 +1,5 @@
 import numpy as np
+import typing as _tp
 
 
 def _steps(p, step, maxiter):
@@ -62,16 +63,16 @@ def _first(method, f0, f, x, i, h, args):
 
 
 def jacobi(
-    f,
-    x,
+    f: _tp.Callable,
+    x: _tp.Union[int, float, _tp.Sequence],
     *args,
-    method=None,
-    mask=None,
-    rtol=0,
-    maxiter=10,
-    maxgrad=3,
-    step=None,
-    diagnostic=None,
+    method: _tp.Optional[int] = None,
+    mask: _tp.Optional[np.ndarray] = None,
+    rtol: float = 0,
+    maxiter: int = 10,
+    maxgrad: int = 3,
+    step: _tp.Optional[_tp.Tuple[float, float]] = None,
+    diagnostic: _tp.Optional[dict] = None,
 ):
     if maxiter <= 0:
         raise ValueError("invalid value for keyword maxiter")
@@ -95,7 +96,6 @@ def jacobi(
     if isinstance(diagnostic, dict):
         diagnostic["method"] = np.zeros(nx, dtype=np.int8)
         diagnostic["iteration"] = np.zeros(len(x_indices), dtype=np.uint8)
-        diagnostic["call"] = None
 
     if method is not None and method not in (-1, 0, 1):
         raise ValueError("invalid value for keyword method")
@@ -126,10 +126,10 @@ def jacobi(
         if jac is None:
             jac = np.empty(r_shape + (nx,), dtype=r.dtype)
             err = np.empty(r_shape + (nx,), dtype=r.dtype)
+            if diagnostic:
+                diagnostic["call"] = np.zeros((nr, nx), dtype=np.uint8)
 
         if diagnostic:
-            if diagnostic["call"] is None:
-                diagnostic["call"] = np.zeros((nr, nx), dtype=np.uint8)
             diagnostic["call"][:, ik] = 2 if md == 0 else 3
 
         for i in range(1, len(h)):
