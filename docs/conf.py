@@ -15,6 +15,16 @@
 # import sys
 # import os
 import jacobi
+from pathlib import Path
+
+with open("index.rst.in") as f:
+    stub = f.read()
+
+with open(Path("..") / "README.rst") as f:
+    readme = f.read().replace("docs/", "")
+
+with open("index.rst", "w") as f:
+    f.write(stub + "\n" + readme)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
