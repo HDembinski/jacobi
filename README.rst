@@ -15,10 +15,12 @@ Features
 - Supports arbitrary auxiliary function arguments
 - Lightweight package, only depends on numpy
 
+.. include:: docs/plot/example.py
+
 Example
 -------
 
-.. code::
+.. code-block:: python
 
   from matplotlib import pyplot as plt
   import numpy as np
