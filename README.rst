@@ -15,8 +15,6 @@ Features
 - Supports arbitrary auxiliary function arguments
 - Lightweight package, only depends on numpy
 
-.. include:: docs/plot/example.py
-
 Example
 -------
 
@@ -41,7 +39,6 @@ Example
   plt.plot(x, fdx, ls="--", label="f'(x)")
   plt.legend()
 
-
 .. image:: docs/_static/example.svg
 
 Comparison to numdifftools
@@ -50,9 +47,8 @@ Comparison to numdifftools
 Speed
 ^^^^^
 
-Jacobi makes better use of vectorised computation than numdifftools.
-
 .. image:: docs/_static/speed.svg
+  :caption: Jacobi makes better use of vectorised computation than numdifftools.
 
 Precision
 ^^^^^^^^^
