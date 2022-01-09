@@ -19,8 +19,6 @@ Example
 -------
 
 .. include:: docs/plot/example.py
-  :language: python
-  :lines: 1-19
 
 .. image:: docs/_static/example.svg
 
