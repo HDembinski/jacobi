@@ -63,7 +63,7 @@ def _first(method, f0, f, x, i, h, args):
 
 
 def jacobi(
-    f: _tp.Callable,
+    fn: _tp.Callable,
     x: _tp.Union[int, float, _tp.Sequence],
     *args,
     method: _tp.Optional[int] = None,
@@ -74,6 +74,46 @@ def jacobi(
     step: _tp.Optional[_tp.Tuple[float, float]] = None,
     diagnostic: _tp.Optional[dict] = None,
 ):
+    """
+    Return first derivative and its error estimate.
+
+    Parameters
+    ----------
+    fn : Callable
+        Function with the signature `fn(x, *args)`, where `x` is a number or an
+        array of numbers and `*args` are optional auxiliary arguments.
+    x : Number or array of numbers
+        The derivative is computed with respect to `x`. If `x` is an array, the Jacobi
+        matrix is computed with respect to each element of `x`.
+    *args : tuple
+        Additional arguments passed to the function.
+    method : {-1, 0, 1} or None, optional
+        Whether to compute central (0), forward (1) or backward derivatives (-1).
+        The default (None) uses auto-detection.
+    mask : array or None, optional
+        If `x` is an array and `mask` is not None, compute the Jacobi matrix only for the
+        part of the array selected by the mask.
+    rtol : float, optional
+        Relative tolerance for the derivative. The algorithm stops when this relative
+        tolerance is reached. If 0 (the default), the algorithm iterates until the
+        error estimate of the derivative does not improve further.
+    maxiter : int, optional
+        Maximum number of iterations of the algorithm.
+    maxgrad : int, optional
+        Maximum grad of the extrapolation polynomial.
+    step : tuple of float or None, optional
+        Factors that reduce the step size in each iteration relative to the previous
+        step.
+    diagnostic : dict or None, optional
+        If an empty dict is passed to this keyword, it is filled with diagnostic
+        information produced by the algorithm. This reduces performance and is only
+        intended for debugging.
+
+    Returns
+    -------
+    array, array
+        Derivative and its error estimate.
+    """
     if maxiter <= 0:
         raise ValueError("invalid value for keyword maxiter")
     if maxgrad < 0:
@@ -107,7 +147,7 @@ def jacobi(
         # if step is None, use optimal step sizes for central derivatives
         h = _steps(x[k], step or (0.25, 0.5), maxiter)
         # if method is None, auto-detect for each x[k]
-        md, f0, r = _first(method, f0, f, x, k, h[0], args)
+        md, f0, r = _first(method, f0, fn, x, k, h[0], args)
 
         if diagnostic:
             diagnostic["method"][ik] = md
@@ -133,7 +173,7 @@ def jacobi(
             diagnostic["call"][:, ik] = 2 if md == 0 else 3
 
         for i in range(1, len(h)):
-            fdi = _derive(md, f0, f, x, k, h[i], args)
+            fdi = _derive(md, f0, fn, x, k, h[i], args)
             fdi = np.reshape(fdi, -1)
             fd.append(fdi if i == 1 else fdi[todo])
             if diagnostic:

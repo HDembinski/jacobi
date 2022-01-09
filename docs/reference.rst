@@ -1,0 +1,4 @@
+Reference
+=========
+
+.. autofunction:: jacobi.jacobi

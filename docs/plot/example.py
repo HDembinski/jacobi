@@ -16,5 +16,5 @@ fdx, fdex = jacobi(f, 0, x)
 plt.plot(x, fx, label="f(x) = sin(x) / x")
 plt.plot(x, fdx, ls="--", label="f'(x)")
 plt.legend()
-plt.savefig("doc/_static/example.svg")
-plt.show()
+
+plt.savefig("docs/_static/example.svg")
