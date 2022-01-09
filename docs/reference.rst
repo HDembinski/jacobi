@@ -1,4 +1,4 @@
 Reference
 =========
 
-.. automodule:: jacobi
+.. autofunction:: jacobi.jacobi
