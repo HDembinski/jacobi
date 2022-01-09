@@ -11,7 +11,6 @@ fn = [
     "mean(x ** 2)",
 ]
 
-
 fig, ax = plt.subplots(
     2, 2, figsize=(10, 7), sharex=True, sharey=True, constrained_layout=True
 )
@@ -46,5 +45,5 @@ for i, fi in enumerate(fn):
 plt.loglog()
 fig.supxlabel("n")
 fig.supylabel("t/sec")
-plt.savefig("doc/_static/speed.svg")
-plt.show()
+
+plt.savefig("docs/_static/speed.svg")
