@@ -80,19 +80,19 @@ def jacobi(
     Parameters
     ----------
     fn : Callable
-        Function with the signature f(x, *args), where x is a number or an
-        array of numbers and *args are optional auxiliary arguments.
+        Function with the signature `fn(x, *args)`, where `x` is a number or an
+        array of numbers and `*args` are optional auxiliary arguments.
     x : Number or array of numbers
-        The derivative is computed with respect to x. If x is an array, the Jacobi
-        matrix of f(x) is computed.
+        The derivative is computed with respect to `x`. If `x` is an array, the Jacobi
+        matrix is computed with respect to each element of `x`.
     *args : tuple
-        Additional arguments passed to fn.
+        Additional arguments passed to the function.
     method : {-1, 0, 1} or None, optional
         Whether to compute central (0), forward (1) or backward derivatives (-1).
         The default (None) uses auto-detection.
     mask : array or None, optional
-        If x is an array and mask is not None, compute the Jacobi matrix only for the
-        part of the array selected by mask.
+        If `x` is an array and `mask` is not None, compute the Jacobi matrix only for the
+        part of the array selected by the mask.
     rtol : float, optional
         Relative tolerance for the derivative. The algorithm stops when this relative
         tolerance is reached. If 0 (the default), the algorithm iterates until the
