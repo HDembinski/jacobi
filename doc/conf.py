@@ -12,8 +12,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-# import sys
-# import os
 from pathlib import Path
 
 with open("index.rst.in") as f:
@@ -21,6 +19,10 @@ with open("index.rst.in") as f:
 
 with open(Path("..") / "README.rst") as f:
     readme = f.read().replace("doc/", "")
+    # remove line 4
+    lines = readme.split("\n")
+    lines = lines[:3] + lines[4:]
+    readme = "\n".join(lines)
 
 with open("index.rst", "w") as f:
     f.write(stub + "\n" + readme)
