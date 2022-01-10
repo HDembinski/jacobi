@@ -15,7 +15,7 @@
 repos:
 # Standard hooks
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.0.1
+  rev: v4.1.0
   hooks:
   - id: check-case-conflict
   - id: check-docstring-first
@@ -38,13 +38,13 @@ repos:
 
 # Python formatting
 - repo: https://github.com/psf/black
-  rev: 21.9b0
+  rev: 21.12b0
   hooks:
   - id: black
 
 # Python type checking
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: 'v0.910-1'
+  rev: 'v0.931'
   hooks:
   - id: mypy
     args: [--allow-redefinition, --ignore-missing-imports, src]
