@@ -25,7 +25,8 @@ jobs:
     - run: |
         python -m venv test
         ./test/bin/activate
-        python -m pip install dist/jacobi-*.whl[test]
+        ls dist
+        python -m pip install $(echo dist/jacobi-*.whl)'[test]'
         python -m pytest
 
     - uses: pypa/gh-action-pypi-publish@master
