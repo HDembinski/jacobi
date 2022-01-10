@@ -10,9 +10,8 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: "3.9"
-    - run: |
-        python -m pip install -e .[doc]
-        python doc/build.py
+    - run: python -m pip install -e .[doc]
+    - run: python doc/build.py
     - uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
       with:
