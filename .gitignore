@@ -1,3 +1,4 @@
+dist
 *.so
 MANIFEST
 *.py[cod]
