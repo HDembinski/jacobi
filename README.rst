@@ -1,14 +1,14 @@
 Jacobi
 ======
 
-.. raw:: html
+.. image:: https://img.shields.io/badge/-docs-success
+  :target: https://hdembinski.github.io/jacobi
+.. image:: https://img.shields.io/pypi/v/jacobi
+  :target: https://pypi.org/project/jacobi
 
-  <a href="https://hdembinski.github.io/jacobi">
-    <img src="https://img.shields.io/badge/-docs-success"/>
-  </a>
-  <a href="https://pypi.org/project/jacobi/">
-    <img src="https://img.shields.io/pypi/v/jacobi"/>
-  </a>
++-----+------------------------------------------------------+
+| a   | ..image:: https://img.shields.io/badge/-docs-success |
++-----+------------------------------------------------------+
 
 Fast numerical derivatives for real analytic functions with arbitrary round-off error.
 
