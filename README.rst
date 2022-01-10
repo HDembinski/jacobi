@@ -11,7 +11,7 @@ Features
 - Robust algorithm based on John D'Errico's `DERIVEST <https://de.mathworks.com/matlabcentral/fileexchange/13490-adaptive-robust-numerical-differentiation>`_: flawlessly works even with functions that have large round-off error
 - Up to 1200x faster than `numdifftools <https://pypi.org/project/numdifftools>`_ at equivalent precision
 - Computes error estimates for derivatives
-- Supports calculation of derivative only up to target precision (speed-up)
+- Supports calculation of derivative up to target precision (speed-up)
 - Supports arbitrary auxiliary function arguments
 - Lightweight package, only depends on numpy
 
