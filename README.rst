@@ -1,7 +1,12 @@
 Jacobi
 ======
 
-`Documentation <https://hdembinski.github.io/jacobi/>`_
+.. image:: https://img.shields.io/pypi/v/jacobi
+  :target: https://pypi.org/project/jacobi
+.. image:: https://img.shields.io/badge/github-docs-success
+  :target: https://hdembinski.github.io/jacobi
+.. image:: https://img.shields.io/badge/github-source-blue
+  :target: https://github.com/HDembinski/jacobi
 
 Fast numerical derivatives for real analytic functions with arbitrary round-off error.
 
