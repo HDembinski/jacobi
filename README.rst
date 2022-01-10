@@ -39,7 +39,7 @@ Example
   plt.plot(x, fdx, ls="--", label="f'(x)")
   plt.legend()
 
-.. image:: docs/_static/example.svg
+.. image:: doc/_static/example.svg
 
 Comparison to numdifftools
 --------------------------
@@ -49,11 +49,11 @@ Speed
 
 Jacobi makes better use of vectorised computation than numdifftools.
 
-.. image:: docs/_static/speed.svg
+.. image:: doc/_static/speed.svg
 
 Precision
 ^^^^^^^^^
 
 The machine precision is indicated by the dashed line.
 
-.. image:: docs/_static/precision.svg
+.. image:: doc/_static/precision.svg

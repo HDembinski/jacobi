@@ -28,4 +28,4 @@ plt.semilogy()
 plt.ylim(1e-16, 1e-11)
 plt.axhline(np.finfo(float).resolution, color="k", ls="--")
 
-plt.savefig("docs/_static/precision.svg")
+plt.savefig("doc/_static/precision.svg")

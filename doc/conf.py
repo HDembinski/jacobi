@@ -20,7 +20,7 @@ with open("index.rst.in") as f:
     stub = f.read()
 
 with open(Path("..") / "README.rst") as f:
-    readme = f.read().replace("docs/", "")
+    readme = f.read().replace("doc/", "")
 
 with open("index.rst", "w") as f:
     f.write(stub + "\n" + readme)

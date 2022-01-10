@@ -46,4 +46,4 @@ plt.loglog()
 fig.supxlabel("n")
 fig.supylabel("t/sec")
 
-plt.savefig("docs/_static/speed.svg")
+plt.savefig("doc/_static/speed.svg")
