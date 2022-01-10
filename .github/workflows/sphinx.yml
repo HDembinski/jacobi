@@ -14,7 +14,7 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: html-docs
-        path: docs/build/html/
+        path: docs/_build/html/
     - uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
       with:
