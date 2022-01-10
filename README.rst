@@ -6,10 +6,6 @@ Jacobi
 .. image:: https://img.shields.io/pypi/v/jacobi
   :target: https://pypi.org/project/jacobi
 
-+-----+------------------------------------------------------+
-| a   | ..image:: https://img.shields.io/badge/-docs-success |
-+-----+------------------------------------------------------+
-
 Fast numerical derivatives for real analytic functions with arbitrary round-off error.
 
 Features
