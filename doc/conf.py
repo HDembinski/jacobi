@@ -18,7 +18,9 @@ with open("index.rst.in") as f:
     stub = f.read()
 
 with open(Path("..") / "README.rst") as f:
-    readme = f.read().replace("doc/", "")
+    readme = f.read().replace(
+        "https://hdembinski.github.io/jacobi/_images/", "_static/"
+    )
 
 with open("index.rst", "w") as f:
     f.write(stub + "\n" + readme)
