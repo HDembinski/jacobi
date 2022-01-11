@@ -2,12 +2,12 @@ import numpy as np
 import typing as _tp
 
 
-def _steps(p, step, maxiter):
-    h0, factor = step
-    h = p * h0
-    if h == 0:
-        h = h0
-    return h * factor ** np.arange(maxiter)
+def _steps(p, steps, maxiter):
+    h = np.empty(maxiter)
+    h[0] = p * steps[0] if p != 0 else steps[0]
+    for i in range(1, len(h)):
+        h[i] = h[i - 1] * steps[min(len(steps) - 1, i)]
+    return h
 
 
 def _derive(mode, f0, f, x, i, h, args):
@@ -62,17 +62,20 @@ def _first(method, f0, f, x, i, h, args):
     return method, f0, (-3 * f0 + 4 * f1 - f2) * norm
 
 
+_Number = _tp.Union[int, float]
+
+
 def jacobi(
     fn: _tp.Callable,
-    x: _tp.Union[int, float, _tp.Sequence],
+    x: _tp.Union[_Number, _tp.Sequence[_Number]],
     *args,
-    method: _tp.Optional[int] = None,
-    mask: _tp.Optional[np.ndarray] = None,
-    rtol: float = 0,
+    method=None,
+    mask=None,
     maxiter: int = 10,
     maxgrad: int = 3,
-    step: _tp.Optional[_tp.Tuple[float, float]] = None,
-    diagnostic: _tp.Optional[dict] = None,
+    rtol: float = 0,
+    step=None,
+    diagnostic=None,
 ):
     """
     Return first derivative and its error estimate.
@@ -87,10 +90,13 @@ def jacobi(
         matrix is computed with respect to each element of `x`.
     *args : tuple
         Additional arguments passed to the function.
-    method : {-1, 0, 1} or None, optional
+    method : {-1, 0, 1, None} or a sequence of {-1, 0, 1, None}, optional
         Whether to compute central (0), forward (1) or backward derivatives (-1).
-        The default (None) uses auto-detection.
-    mask : array or None, optional
+        The default (None) is to try a central derivative, and fall back to a forward
+        or backward derivative if the backward or forward step produces NaN values,
+        respectively. If `x` is an array, then a sequence of the same length is also
+        accepted, which determines the method for each element of `x`.
+    mask : array_like or None, optional
         If `x` is an array and `mask` is not None, compute the Jacobi matrix only for the
         part of the array selected by the mask.
     rtol : float, optional
@@ -101,7 +107,7 @@ def jacobi(
         Maximum number of iterations of the algorithm.
     maxgrad : int, optional
         Maximum grad of the extrapolation polynomial.
-    step : tuple of float or None, optional
+    step : sequence of float or None, optional
         Factors that reduce the step size in each iteration relative to the previous
         step.
     diagnostic : dict or None, optional
@@ -137,8 +143,9 @@ def jacobi(
         diagnostic["method"] = np.zeros(nx, dtype=np.int8)
         diagnostic["iteration"] = np.zeros(len(x_indices), dtype=np.uint8)
 
-    if method is not None and method not in (-1, 0, 1):
-        raise ValueError("invalid value for keyword method")
+    if np.ndim(method) > x.ndim:
+        raise ValueError("invalid value for keyword method, too many dimensions")
+    method = tuple(np.broadcast(x, method).iters[1])
 
     f0 = None
     jac = None
@@ -146,8 +153,10 @@ def jacobi(
     for ik, k in enumerate(x_indices):
         # if step is None, use optimal step sizes for central derivatives
         h = _steps(x[k], step or (0.25, 0.5), maxiter)
-        # if method is None, auto-detect for each x[k]
-        md, f0, r = _first(method, f0, fn, x, k, h[0], args)
+
+        if method[k] not in {-1, 0, 1, None}:
+            raise ValueError(f"invalid value method[{k}] = {method[k]}")
+        md, f0, r = _first(method[k], f0, fn, x, k, h[0], args)
 
         if diagnostic:
             diagnostic["method"][ik] = md
