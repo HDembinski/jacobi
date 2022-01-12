@@ -21,6 +21,12 @@ Features
 - Supports arbitrary auxiliary function arguments
 - Lightweight package, only depends on numpy
 
+Planned features
+----------------
+
+- Compute the Hessian matrix numerically with the same algorithm
+- Further generalize the calculation to support function arguments with shape (N, K), in that case compute the Jacobi matrix for each of the K vectors of length N 
+
 Example
 -------
 
