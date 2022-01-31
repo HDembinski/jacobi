@@ -62,9 +62,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"Jacobi"
-copyright = u"2021, Hans Dembinski"
-author = u"Hans Dembinski"
+project = "Jacobi"
+copyright = "2021, Hans Dembinski"
+author = "Hans Dembinski"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
