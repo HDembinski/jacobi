@@ -38,8 +38,8 @@ Example
 
 
   # function of one variable with auxiliary argument; returns a vector
-  def f(p, x):
-      y = p + x
+  def f(dx, x):
+      y = x + dx
       return np.sin(y) / y
 
 
