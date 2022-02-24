@@ -59,7 +59,7 @@ Comparison to numdifftools
 Speed
 ^^^^^
 
-Jacobi makes better use of vectorised computation than numdifftools.
+Jacobi makes better use of vectorised computation than numdifftools. Smaller run-time is better (and ratio > 1).
 
 .. image:: https://hdembinski.github.io/jacobi/_images/speed.svg
 
