@@ -14,7 +14,7 @@ Features
 --------
 
 - Robustly compute the generalised Jacobi matrix for an arbitrary real analytic mapping ℝⁿ → ℝⁱ¹ × ... × ℝⁱⁿ
-- Derivative is computed to specified accuracy (then uses less computing time) or until precision of function is reached
+- Derivative is either computed to specified accuracy (to save computing time) or until maximum precision of function is reached
 - Algorithm based on John D'Errico's `DERIVEST <https://de.mathworks.com/matlabcentral/fileexchange/13490-adaptive-robust-numerical-differentiation>`_: works even with functions that have large round-off error
 - Up to 1200x faster than `numdifftools <https://pypi.org/project/numdifftools>`_ at equivalent precision
 - Returns error estimates for derivatives
