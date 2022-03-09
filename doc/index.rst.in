@@ -1,3 +1,11 @@
+.. |jacobi| image:: _static/logo.svg
+
+|jacobi|
+========
+
+.. include:: ../README.rst
+  :start-after: skip-marker-do-not-remove
+
 .. toctree::
    :maxdepth: 2
    :hidden:
