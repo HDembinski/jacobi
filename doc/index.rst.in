@@ -1,3 +1,5 @@
+.. README.rst is included via conf.py
+
 .. toctree::
    :maxdepth: 2
    :hidden:
