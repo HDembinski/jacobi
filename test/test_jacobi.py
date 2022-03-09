@@ -45,6 +45,10 @@ def fd6(r):
     return r
 
 
+def f7(x):
+    return np.ones(3) * x ** 2
+
+
 @pytest.mark.parametrize(
     "fn",
     [
@@ -63,6 +67,14 @@ def test_jacobi(fn):
     f, fd = fn
     y, ye = jacobi(f, x)
     assert_allclose(y, fd(x))
+    assert_allclose(ye, np.zeros_like(y), atol=1e-10)
+
+
+def test_jacobi_0d():
+    x = 2
+    y, ye = jacobi(f7, x)
+    assert np.ndim(y) == 1
+    assert_allclose(y, f7(x))
     assert_allclose(ye, np.zeros_like(y), atol=1e-10)
 
 
