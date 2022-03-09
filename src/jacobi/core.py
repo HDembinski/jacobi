@@ -243,17 +243,17 @@ def propagate(
     **kwargs,
 ) -> _tp.Tuple[np.ndarray, np.ndarray]:
     """
-    Numerically propagates the covariance into a new space.
+    Numerically propagates the covariance of function inputs to function outputs.
 
-    The function does error propagation. It computes C' = J C J^T, where C is the
-    covariance matrix of the input, C' the matrix of the output, and J is the Jacobi
-    matrix of first derivatives of the mapping function fn. The Jacobi matrix is
-    computed numerically.
+    The function computes C' = J C J^T, where C is the covariance matrix of the input,
+    C' the matrix of the output, and J is the Jacobi matrix of first derivatives of the
+    mapping function fn. The Jacobi matrix is computed numerically.
 
     Parameters
     ----------
     fn: callable
-        Vectorized function that computes y = fn(x).
+        Function that computes y = fn(x). x and y are each allowed to be scalars or
+        one-dimensional arrays.
     x: float or array-like with shape (N,)
         Input vector.
     cov: float or array-like with shape (N,) or shape(N, N)
