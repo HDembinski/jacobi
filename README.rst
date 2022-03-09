@@ -23,6 +23,7 @@ Features
 - Up to 1200x faster than `numdifftools <https://pypi.org/project/numdifftools>`_ at equivalent precision
 - Returns error estimates for derivatives
 - Supports arbitrary auxiliary function arguments
+- Perform statistical error propagation based on numerically computed jacobian
 - Lightweight package, only depends on numpy
 
 Planned features
@@ -56,6 +57,22 @@ Example
   plt.legend()
 
 .. image:: https://hdembinski.github.io/jacobi/_images/example.svg
+
+.. code-block:: python
+
+  from jacobi import propagate
+  import numpy as np
+
+
+  def f(x):
+      a = 1.5
+      b = 3.1
+      return a * np.exp(-x ** 2) + b
+
+  x = [1.0, 2.0]
+  xcov = [[1.1, 0.1], [0.1, 2.3]]
+  y, ycov = propagate(f, x, xcov)
+
 
 Comparison to numdifftools
 --------------------------
