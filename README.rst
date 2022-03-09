@@ -1,5 +1,5 @@
-.. |jacobi| image:: doc/_static/jacobi.svg
-   :alt:jacobi
+.. |jacobi| image:: doc/_static/logo.svg
+   :alt: jacobi
    :target: https://hdembinski.github.io/jacobi
 
 |jacobi|
