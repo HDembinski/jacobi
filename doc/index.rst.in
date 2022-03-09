@@ -1,4 +1,4 @@
-.. include:: ../README.rst
+.. README.rst is included via conf.py
 
 .. toctree::
    :maxdepth: 2
