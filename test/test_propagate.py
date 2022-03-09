@@ -6,7 +6,7 @@ import pytest
 
 def test_00():
     def fn(x):
-        return x ** 2 + 5
+        return x**2 + 5
 
     x = 2
     xcov = 3
@@ -17,7 +17,7 @@ def test_00():
 
 def test_01():
     def fn(x):
-        return np.ones(2) * x ** 2
+        return np.ones(2) * x**2
 
     x = 2
     xcov = 3

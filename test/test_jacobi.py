@@ -46,7 +46,7 @@ def fd6(r):
 
 
 def f7(x):
-    return np.ones(3) * x ** 2
+    return np.ones(3) * x**2
 
 
 @pytest.mark.parametrize(
