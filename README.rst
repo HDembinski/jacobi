@@ -1,5 +1,5 @@
-Jacobi
-======
+![](doc/_static/jacobi.svg)
+===========================
 
 .. image:: https://img.shields.io/pypi/v/jacobi
   :target: https://pypi.org/project/jacobi
