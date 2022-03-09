@@ -11,7 +11,7 @@ def f(p, x):
 
 
 def fp(x):
-    return np.cos(x) / x - np.sin(x) / x ** 2
+    return np.cos(x) / x - np.sin(x) / x**2
 
 
 x = np.linspace(-10, 10, 1000)

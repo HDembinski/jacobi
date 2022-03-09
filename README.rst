@@ -1,5 +1,8 @@
-Jacobi
-======
+.. |jacobi| image:: https://hdembinski.github.io/jacobi/_images/logo.svg
+   :alt: jacobi
+
+|jacobi|
+========
 
 .. image:: https://img.shields.io/pypi/v/jacobi
   :target: https://pypi.org/project/jacobi
@@ -13,17 +16,23 @@ Fast numerical derivatives for real analytic functions with arbitrary round-off 
 Features
 --------
 
-- Robustly compute the generalised Jacobi matrix for an arbitrary real analytic mapping of ℝⁿ → ℝⁱ¹ × ... × ℝⁱⁿ
-- Derivative is computed to specified accuracy or until precision of function is reached
-- Algorithm based on John D'Errico's `DERIVEST <https://de.mathworks.com/matlabcentral/fileexchange/13490-adaptive-robust-numerical-differentiation>`_: flawlessly works even with functions that have large round-off error
+- Robustly compute the generalised Jacobi matrix for an arbitrary real analytic mapping ℝⁿ → ℝⁱ¹ × ... × ℝⁱⁿ
+- Derivative is either computed to specified accuracy (to save computing time) or until maximum precision of function is reached
+- Algorithm based on John D'Errico's `DERIVEST <https://de.mathworks.com/matlabcentral/fileexchange/13490-adaptive-robust-numerical-differentiation>`_: works even with functions that have large round-off error
 - Up to 1200x faster than `numdifftools <https://pypi.org/project/numdifftools>`_ at equivalent precision
 - Returns error estimates for derivatives
-- Supports calculation of derivative up to target precision (speed-up)
 - Supports arbitrary auxiliary function arguments
+- Perform statistical error propagation based on numerically computed jacobian
 - Lightweight package, only depends on numpy
 
-Example
--------
+Planned features
+----------------
+
+- Compute the Hessian matrix numerically with the same algorithm
+- Further generalize the calculation to support function arguments with shape (N, K), in that case compute the Jacobi matrix for each of the K vectors of length N
+
+Examples
+--------
 
 .. code-block:: python
 
@@ -33,8 +42,8 @@ Example
 
 
   # function of one variable with auxiliary argument; returns a vector
-  def f(p, x):
-      y = p + x
+  def f(dx, x):
+      y = x + dx
       return np.sin(y) / y
 
 
@@ -48,13 +57,29 @@ Example
 
 .. image:: https://hdembinski.github.io/jacobi/_images/example.svg
 
+.. code-block:: python
+
+  from jacobi import propagate
+  import numpy as np
+
+
+  def f(x):
+      a = 1.5
+      b = 3.1
+      return a * np.exp(-x ** 2) + b
+
+  x = [1.0, 2.0]
+  xcov = [[1.1, 0.1], [0.1, 2.3]]
+  y, ycov = propagate(f, x, xcov)
+
+
 Comparison to numdifftools
 --------------------------
 
 Speed
 ^^^^^
 
-Jacobi makes better use of vectorised computation than numdifftools.
+Jacobi makes better use of vectorised computation than numdifftools. Smaller run-time is better (and ratio > 1).
 
 .. image:: https://hdembinski.github.io/jacobi/_images/speed.svg
 

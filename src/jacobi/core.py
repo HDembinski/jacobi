@@ -1,6 +1,16 @@
 import numpy as np
 import typing as _tp
 
+_T = _tp.TypeVar("_T")
+
+
+class _Indexable(_tp.Iterable, _tp.Sized, _tp.Generic[_T]):
+    """Indexable type for mypy."""
+
+    def __getitem__(self, idx: int) -> _T:
+        """Get item at index idx."""
+        ...  # pragma: no cover
+
 
 def _steps(p, steps, maxiter):
     h = np.empty(maxiter)
@@ -233,3 +243,61 @@ def jacobi(
         err = np.squeeze(err)
 
     return jac, err
+
+
+def propagate(
+    fn: _tp.Callable,
+    x: _tp.Union[float, _Indexable[float]],
+    cov: _tp.Union[float, _Indexable[float], _Indexable[_Indexable[float]]],
+    **kwargs,
+) -> _tp.Tuple[np.ndarray, np.ndarray]:
+    """
+    Numerically propagates the covariance of function inputs to function outputs.
+
+    The function computes C' = J C J^T, where C is the covariance matrix of the input,
+    C' the matrix of the output, and J is the Jacobi matrix of first derivatives of the
+    mapping function fn. The Jacobi matrix is computed numerically.
+
+    Parameters
+    ----------
+    fn: callable
+        Function that computes y = fn(x). x and y are each allowed to be scalars or
+        one-dimensional arrays.
+    x: float or array-like with shape (N,)
+        Input vector.
+    cov: float or array-like with shape (N,) or shape(N, N)
+        Covariance matrix of input vector. If the array is one-dimensional, it is
+        interpreted as the diagonal of a covariance matrix with zero off-diagonal
+        elements.
+    **kwargs:
+        Extra arguments are passed to :func:`jacobi`.
+
+    Returns
+    -------
+    y, ycov
+        y is the result of fn(x)
+        ycov is the propagated covariance matrix.
+    """
+    x = np.array(x)
+    y = fn(x)
+    jac = jacobi(fn, x, **kwargs)[0]
+
+    x_nd = np.ndim(x)
+    y_nd = np.ndim(y)
+    x_len = len(x) if x_nd == 1 else 1
+    y_len = len(y) if y_nd == 1 else 1
+
+    jac_nd = np.ndim(jac)
+    if jac_nd == 0:
+        jac = np.atleast_2d(jac)
+    elif jac_nd == 1:
+        jac = jac.reshape((y_len, x_len))
+
+    xcov = np.atleast_1d(cov)
+    xcov_nd = np.ndim(xcov)
+
+    if xcov.shape[0] != x_len:
+        raise ValueError("x and cov have incompatible shapes")
+
+    ycov = np.einsum("il,kl,l" if xcov_nd == 1 else "ij,kl,jl", jac, jac, xcov)
+    return y, ycov
