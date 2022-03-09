@@ -1,5 +1,9 @@
-![](doc/_static/jacobi.svg)
-===========================
+.. |jacobi| image:: doc/_static/jacobi.svg
+   :alt:jacobi
+   :target: https://hdembinski.github.io/jacobi
+
+|jacobi|
+========
 
 .. image:: https://img.shields.io/pypi/v/jacobi
   :target: https://pypi.org/project/jacobi
