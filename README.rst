@@ -4,8 +4,6 @@
 |jacobi|
 ========
 
-.. skip-marker-do-not-remove
-
 .. image:: https://img.shields.io/pypi/v/jacobi
   :target: https://pypi.org/project/jacobi
 .. image:: https://img.shields.io/badge/github-docs-success
