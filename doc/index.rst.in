@@ -1,7 +1,5 @@
-.. |jacobi| image:: _static/logo.svg
-
-|jacobi|
-========
+jacobi
+======
 
 .. include:: ../README.rst
   :start-after: skip-marker-do-not-remove

@@ -1,6 +1,5 @@
-.. |jacobi| image:: doc/_static/logo.svg
+.. |jacobi| image:: https://hdembinski.github.io/jacobi/_images/logo.svg
    :alt: jacobi
-   :target: https://hdembinski.github.io/jacobi
 
 |jacobi|
 ========
