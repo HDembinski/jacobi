@@ -266,8 +266,10 @@ def propagate(
     Returns
     -------
     y, ycov
-        y is the result of fn(x)
+        y is the result of fn(x).
         ycov is the propagated covariance matrix.
+        If ycov is a matrix, unless y is a number. In that case, ycov is also
+        reduced to a number.
     """
     x = np.array(x)
     y = fn(x)
@@ -291,4 +293,8 @@ def propagate(
         raise ValueError("x and cov have incompatible shapes")
 
     ycov = np.einsum("il,kl,l" if xcov_nd == 1 else "ij,kl,jl", jac, jac, xcov)
+
+    if np.ndim(y) == 0:
+        ycov = ycov[0, 0]
+
     return y, ycov

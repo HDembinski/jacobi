@@ -44,6 +44,8 @@ def test_10():
     assert_allclose(y, fn(x))
     jac = np.ones((1, len(x)))
     assert_allclose(ycov, np.linalg.multi_dot([jac, xcov, jac.T]))
+    assert np.ndim(y) == 0
+    assert np.ndim(ycov) == 0
 
 
 def test_11():
