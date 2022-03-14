@@ -39,13 +39,21 @@ def test_10():
         return np.sum(x)
 
     x = np.arange(2)
-    xcov = [[1, 0], [0, 1]]
-    y, ycov = propagate(fn, x, xcov)
-    assert_allclose(y, fn(x))
-    jac = np.ones((1, len(x)))
-    assert_allclose(ycov, np.linalg.multi_dot([jac, xcov, jac.T]))
-    assert np.ndim(y) == 0
-    assert np.ndim(ycov) == 0
+    for xcov in ([1, 1], [[1, 0], [0, 1]]):
+
+        y, ycov = propagate(fn, x, xcov)
+        assert_allclose(y, fn(x))
+        jac = np.ones((1, len(x)))
+
+        if np.ndim(xcov) == 1:
+            xcov2 = np.zeros((2, 2))
+            for i in range(2):
+                xcov2[i, i] = xcov[i]
+        else:
+            xcov2 = xcov
+        assert_allclose(ycov, np.linalg.multi_dot([jac, xcov2, jac.T]))
+        assert np.ndim(y) == 0
+        assert np.ndim(ycov) == 0
 
 
 def test_11():
@@ -55,8 +63,15 @@ def test_11():
         return np.dot(A, x)
 
     x = np.arange(2)
-    xcov = [[1, 0], [0, 1]]
-    y, ycov = propagate(fn, x, xcov)
-    assert_allclose(y, fn(x))
-    jac = A
-    assert_allclose(ycov, np.linalg.multi_dot([jac, xcov, jac.T]))
+
+    for xcov in ([1, 1], [[1, 0], [0, 1]]):
+        y, ycov = propagate(fn, x, xcov)
+        assert_allclose(y, fn(x))
+        jac = A
+        if np.ndim(xcov) == 1:
+            xcov2 = np.zeros((2, 2))
+            for i in range(2):
+                xcov2[i, i] = xcov[i]
+        else:
+            xcov2 = xcov
+        assert_allclose(ycov, np.linalg.multi_dot([jac, xcov2, jac.T]))
