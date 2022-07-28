@@ -62,15 +62,16 @@ Examples
   from jacobi import propagate
   import numpy as np
 
-
+  # arbitrarily complex function that calls in compiled libraries etc
   def f(x):
       a = 1.5
       b = 3.1
       return a * np.exp(-x ** 2) + b
 
+  # f accepts a parameter vector x, which has an associated covariance matrix xcov
   x = [1.0, 2.0]
   xcov = [[1.1, 0.1], [0.1, 2.3]]
-  y, ycov = propagate(f, x, xcov)
+  y, ycov = propagate(f, x, xcov)  # y=f(x) and ycov = J xcov J^T
 
 
 Comparison to numdifftools
