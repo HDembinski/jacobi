@@ -42,9 +42,9 @@ Examples
 
 
   # function of one variable with auxiliary argument; returns a vector
-  def f(dx, x):
-      y = x + dx
-      return np.sin(y) / y
+  def f(dx, x0):
+      x = x0 + dx
+      return np.sin(x) / x
 
 
   x = np.linspace(-10, 10, 1000)
