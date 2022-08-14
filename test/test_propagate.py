@@ -75,3 +75,66 @@ def test_11():
         else:
             xcov2 = xcov
         assert_allclose(ycov, np.linalg.multi_dot([jac, xcov2, jac.T]))
+
+
+@pytest.mark.parametrize("ndim", (1, 2))
+def test_cov_1d_2d(ndim):
+    def fn(x):
+        return x
+
+    x = [1, 2]
+    xcov_1d = [3, 4]
+    xcov_2d = np.diag(xcov_1d)
+
+    y, ycov = propagate(fn, x, xcov_1d if ndim == 1 else xcov_2d)
+
+    assert np.ndim(ycov) == 2
+
+    assert_allclose(y, x)
+    assert_allclose(ycov, xcov_2d)
+
+
+def test_two_arguments_1():
+    def fn1(x, y):
+        return (x - y) / (x + y)
+
+    x = 1
+    xcov = 2
+    y = 3
+    ycov = 4
+
+    z1, zcov1 = propagate(fn1, x, xcov, y, ycov)
+
+    def fn2(r):
+        return fn1(r[0], r[1])
+
+    r = [x, y]
+    rcov = np.diag([xcov, ycov])
+
+    z2, zcov2 = propagate(fn2, r, rcov)
+
+    assert_allclose(z2, z1)
+    assert_allclose(zcov2, zcov1)
+
+
+def test_two_arguments_2():
+    def fn1(x, y):
+        return np.concatenate([x, np.atleast_1d(y)])
+
+    x = [1, 2]
+    xcov = [2, 3]
+    y = 3
+    ycov = 4
+
+    z1, zcov1 = propagate(fn1, x, xcov, y, ycov)
+
+    def fn2(r):
+        return fn1(r[:2], r[2])
+
+    r = [*x, y]
+    rcov = np.diag([*xcov, ycov])
+
+    z2, zcov2 = propagate(fn2, r, rcov)
+
+    assert_allclose(z2, z1)
+    assert_allclose(zcov2, zcov1)

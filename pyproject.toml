@@ -7,3 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "src/jacobi/_version.py"
+
+[tool.mypy]
+ignore_missing_imports = true
+allow_redefinition = true
