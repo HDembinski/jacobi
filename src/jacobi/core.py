@@ -1,3 +1,5 @@
+"""Core functions of jacobi."""
+
 import numpy as np
 import typing as _tp
 
@@ -74,15 +76,15 @@ def _first(method, f0, f, x, i, h, args):
 
 def jacobi(
     fn: _tp.Callable,
-    x: _tp.Union[int, float, _tp.Sequence],
+    x: _tp.Union[float, _Indexable[float]],
     *args,
-    method: _tp.Optional[int] = None,
-    mask: _tp.Optional[np.ndarray] = None,
+    method: int = None,
+    mask: np.ndarray = None,
     rtol: float = 0,
     maxiter: int = 10,
     maxgrad: int = 3,
-    step: _tp.Optional[_tp.Tuple[float, float]] = None,
-    diagnostic: _tp.Optional[dict] = None,
+    step: _tp.Tuple[float, float] = None,
+    diagnostic: dict = None,
 ):
     """
     Return first derivative and its error estimate.
@@ -240,6 +242,7 @@ def propagate(
     fn: _tp.Callable,
     x: _tp.Union[float, _Indexable[float]],
     cov: _tp.Union[float, _Indexable[float], _Indexable[_Indexable[float]]],
+    *args,
     **kwargs,
 ) -> _tp.Tuple[np.ndarray, np.ndarray]:
     """
@@ -252,14 +255,21 @@ def propagate(
     Parameters
     ----------
     fn: callable
-        Function that computes y = fn(x). x and y are each allowed to be scalars or
-        one-dimensional arrays.
+        Function that computes r = fn(x, [y, ...]). The arguments of the function are
+        each allowed to be scalars or one-dimensional arrays. If the function accepts
+        several arguments, their uncertainties are treated as uncorrelated.
+        Functions that accept several correlated arguments must be wrapped, see examples.
+        The result of the function may be a scalar or a one-dimensional array with a
+        different lenth as the input.
     x: float or array-like with shape (N,)
-        Input vector.
+        Input vector. An array-like is converted before passing it to the callable.
     cov: float or array-like with shape (N,) or shape(N, N)
         Covariance matrix of input vector. If the array is one-dimensional, it is
         interpreted as the diagonal of a covariance matrix with zero off-diagonal
         elements.
+    *args:
+        If the function accepts several arguments that are mutually independent, these
+        is possible to pass those values and covariance matrices pairwise, see examples.
     **kwargs:
         Extra arguments are passed to :func:`jacobi`.
 
@@ -270,14 +280,93 @@ def propagate(
         ycov is the propagated covariance matrix.
         If ycov is a matrix, unless y is a number. In that case, ycov is also
         reduced to a number.
+
+    Examples
+    --------
+    General error propagation maps input vectors to output vectors::
+
+        def fn(x):
+            return x ** 2 + 1
+
+        x = [1, 2]
+        xcov = [[3, 1],
+                [1, 4]]
+
+        y, ycov = propagate(fn, x, xcov)
+
+    If the function accepts several arguments, their uncertainties are treated as
+    uncorrelated::
+
+        def fn(x, y):
+            return x + y
+
+        x = 1
+        y = 2
+        xcov = 2
+        ycov = 3
+
+        z, zcov = propagate(fn, x, xcov, y, ycov)
+
+    Functions that accept several correlated arguments must be wrapped::
+
+        def fn(x, y):
+            return x + y
+
+        x = 1
+        y = 2
+        sigma_x = 3
+        sigma_y = 4
+        rho_xy = 0.5
+
+        r = [x, y]
+        cov_xy = rho_xy * sigma_x * sigma_y
+        rcov = [[sigma_x ** 2, cov_xy], [cov_xy, sigma_y ** 2]]
+
+        def fn_wrapped(r):
+            return fn(r[0], r[1])
+
+        z, zcov = propagate(fn_wrapped, r, rcov)
+
+    See Also
+    --------
+    jacobi
     """
+    if args:
+        if len(args) % 2 != 0:
+            raise ValueError("number of extra positional arguments must be even")
+
+        x_parts: _tp.List[np.ndarray] = [
+            np.atleast_1d(_) for _ in ([x] + [a for a in args[::2]])
+        ]
+        cov_parts: _tp.List[np.ndarray] = [
+            np.atleast_1d(_) for _ in ([cov] + [a for a in args[1::2]])
+        ]
+        slices = []
+        i = 0
+        for xi in x_parts:
+            n = len(xi)
+            slices.append(slice(i, i + n))
+            i += n
+
+        r = np.concatenate(x_parts)
+        n = len(r)
+        rcov = np.zeros((n, n))
+        for sl, covi in zip(slices, cov_parts):
+            rcov[sl, sl] = np.diag(covi) if covi.ndim == 1 else covi
+
+        def wrapped(r):
+            args = [r[sl] for sl in slices]
+            return fn(*args)
+
+        return propagate(wrapped, r, rcov)
+
     x = np.array(x)
     y = fn(x)
     jac = jacobi(fn, x, **kwargs)[0]
 
     x_nd = np.ndim(x)
     y_nd = np.ndim(y)
-    x_len = len(x) if x_nd == 1 else 1
+    x_len = len(x) if x_nd == 1 else 1  # type: ignore
     y_len = len(y) if y_nd == 1 else 1
 
     jac_nd = np.ndim(jac)

@@ -47,5 +47,12 @@ repos:
   rev: 'v0.971'
   hooks:
   - id: mypy
-    args: [--allow-redefinition, --ignore-missing-imports, src]
+    args: [src]
     pass_filenames: false
+
+# doc string checking
+- repo: https://github.com/PyCQA/pydocstyle
+  rev: 6.1.1
+  hooks:
+  - id: pydocstyle
+    files: src/jacobi/.*\.py
