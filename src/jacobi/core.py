@@ -319,13 +319,6 @@ def propagate(
     so the Jacobian computed from fn(x) has zero off-diagonal entries. In this case,
     one can speed up the calculation significantly with a special keyword::
 
-        def fn(x):
-            return x ** 2 + 1
-
-        x = [1, 2]
-        xcov = [[3, 1],
-                [1, 4]]
-
         # same result as before, but faster and uses much less memory
         y, ycov = propagate(fn, x, xcov, diagonal=True)
 
