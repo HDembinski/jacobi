@@ -372,8 +372,10 @@ def propagate(
             raise ValueError("number of extra positional arguments must be even")
 
         args_a = [np.asarray(_) for _ in ((x, cov) + args)]
-        y_a = np.asarray(fn(*args_a))
-        return _propagate_independent(fn, y_a, args_a, **kwargs)
+        x_parts = args_a[::2]
+        cov_parts = args_a[1::2]
+        y_a = np.asarray(fn(*x_parts))
+        return _propagate_independent(fn, y_a, x_parts, cov_parts, **kwargs)
 
     x_a = np.asarray(x)
     cov_a = np.asarray(cov)
@@ -394,25 +396,17 @@ def propagate(
 
 
 def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs):
-    jac = np.asarray(jacobi(fn, x, **kwargs)[0])
+    x_a = np.atleast_1d(x)
 
-    if jac.ndim == 0:
-        # ndim of xcov can only be 0 here, because
-        # jac.ndim wouldn't be 0 otherwise
-        assert xcov.ndim == 0
-        ycov = xcov * jac**2
-        return y, ycov
+    _check_x_xcov_compatibility(x_a, xcov)
 
-    x_len = len(x) if x.ndim == 1 else 1
+    jac = np.asarray(jacobi(fn, x_a, **kwargs)[0])
+
     y_len = len(y) if y.ndim == 1 else 1
 
     if jac.ndim == 1:
-        jac = jac.reshape((y_len, x_len))
+        jac = jac.reshape((y_len, len(x_a)))
     assert np.ndim(jac) == 2
-
-    if xcov.ndim > 0 and len(xcov) != x_len:
-        # this works for 1D and 2D xcov
-        raise ValueError("x and cov have incompatible shapes")
 
     ycov = _jac_cov_product(jac, xcov)
 
@@ -426,28 +420,34 @@ def _propagate_diagonal(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kw
     jac = np.asarray(jacobi(fn, x, **kwargs)[0])
     assert jac.ndim <= 1
 
-    if xcov.ndim > 0 and xcov.shape[0] != x.shape[0]:
-        raise ValueError("x and cov have incompatible shapes")
+    _check_x_xcov_compatibility(x, xcov)
 
     ycov = _jac_cov_product(jac, xcov)
 
     return y, ycov
 
 
-def _propagate_independent(fn, y: np.ndarray, xargs: _tp.List[np.ndarray], **kwargs):
+def _propagate_independent(
+    fn,
+    y: np.ndarray,
+    x_parts: _tp.List[np.ndarray],
+    xcov_parts: _tp.List[np.ndarray],
+    **kwargs,
+):
     ycov = 0
 
-    for i in range(0, len(xargs), 2):
-        x = xargs[i]
-        rest = xargs[:i:2] + xargs[i + 1 :: 2]
+    for i, x in enumerate(x_parts):
+        rest = x_parts[:i] + x_parts[i + 1 :]
 
         def wrapped(x, *rest):
             args = rest[:i] + (x,) + rest[i:]
             return fn(*args)
 
-        jac = np.asarray(jacobi(wrapped, x, *rest, **kwargs)[0])
+        x_a = np.atleast_1d(x)
+        xcov = xcov_parts[i]
+        _check_x_xcov_compatibility(x_a, xcov)
 
-        xcov = xargs[i + 1]
+        jac = np.asarray(jacobi(wrapped, x_a, *rest, **kwargs)[0])
         ycov += _jac_cov_product(jac, xcov)
 
     return y, ycov
@@ -464,3 +464,9 @@ def _jac_cov_product(jac: np.ndarray, xcov: np.ndarray):
         return np.einsum("ij,kj", jac, jac) * xcov
     assert jac.ndim < 2 and xcov.ndim < 2
     return xcov * jac**2
+
+
+def _check_x_xcov_compatibility(x: np.ndarray, xcov: np.ndarray):
+    if xcov.ndim > 0 and len(xcov) != (len(x) if x.ndim == 1 else 1):
+        # this works for 1D and 2D xcov
+        raise ValueError("x and cov have incompatible shapes")

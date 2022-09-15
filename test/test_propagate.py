@@ -126,7 +126,7 @@ def test_two_arguments_2():
     y = 3
     ycov = 4
 
-    z1, zcov1 = propagate(fn1, x, xcov, y, ycov)
+    z, zcov = propagate(fn1, x, xcov, y, ycov)
 
     def fn2(r):
         return fn1(r[:2], r[2])
@@ -134,7 +134,7 @@ def test_two_arguments_2():
     r = [*x, y]
     rcov = np.diag([*xcov, ycov])
 
-    z2, zcov2 = propagate(fn2, r, rcov)
+    z_ref, zcov_ref = propagate(fn2, r, rcov)
 
-    assert_allclose(z2, z1)
-    assert_allclose(zcov2, zcov1)
+    assert_allclose(z, z_ref)
+    assert_allclose(zcov, zcov_ref)
