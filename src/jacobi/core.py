@@ -408,10 +408,10 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
 
     if jac.ndim == 1:
         jac = jac.reshape((y_len, x_len))
-
     assert np.ndim(jac) == 2
 
-    if xcov.ndim > 0 and xcov.shape[0] != x_len:
+    if xcov.ndim > 0 and len(xcov) != x_len:
+        # this works for 1D and 2D xcov
         raise ValueError("x and cov have incompatible shapes")
 
     ycov = _jac_cov_product(jac, xcov)
@@ -458,6 +458,9 @@ def _jac_cov_product(jac: np.ndarray, xcov: np.ndarray):
         return np.einsum(
             "i,j,ij -> ij" if jac.ndim == 1 else "ij,kl,jl", jac, jac, xcov
         )
-    elif xcov.ndim == 1 and jac.ndim == 2:
-        return np.einsum("ij,jk,j", jac, jac, xcov)
+    elif jac.ndim == 2:
+        if xcov.ndim == 1:
+            return np.einsum("ij,kj,j", jac, jac, xcov)
+        return np.einsum("ij,kj", jac, jac) * xcov
+    assert jac.ndim < 2 and xcov.ndim < 2
     return xcov * jac**2
