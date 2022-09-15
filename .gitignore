@@ -20,3 +20,4 @@ notebook/.ipynb_checkpoints
 src/jacobi/_version.py
 doc/index.rst
 .vscode
+.coverage

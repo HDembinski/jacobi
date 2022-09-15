@@ -126,7 +126,7 @@ def test_two_arguments_2():
     y = 3
     ycov = 4
 
-    z1, zcov1 = propagate(fn1, x, xcov, y, ycov)
+    z, zcov = propagate(fn1, x, xcov, y, ycov)
 
     def fn2(r):
         return fn1(r[:2], r[2])
@@ -134,7 +134,80 @@ def test_two_arguments_2():
     r = [*x, y]
     rcov = np.diag([*xcov, ycov])
 
-    z2, zcov2 = propagate(fn2, r, rcov)
+    z_ref, zcov_ref = propagate(fn2, r, rcov)
 
-    assert_allclose(z2, z1)
-    assert_allclose(zcov2, zcov1)
+    assert_allclose(z, z_ref)
+    assert_allclose(zcov, zcov_ref)
+
+
+def test_bad_number_of_arguments():
+    with pytest.raises(ValueError, match="number of extra"):
+        propagate(lambda x: x, 1, 2, 3)
+
+
+def test_bad_input_dimensions():
+    def fn(x):
+        return x
+
+    with pytest.raises(ValueError):
+        propagate(fn, [[1]], 1)
+
+    with pytest.raises(ValueError):
+        propagate(fn, 1, [[[1]]])
+
+
+def test_diagonal_1():
+    def fn(x):
+        return x**2 + 3
+
+    def fprime(x):
+        x = np.atleast_1d(x)
+        return 2 * x
+
+    x = 2
+    xcov = 3
+
+    y, ycov = propagate(fn, x, xcov, diagonal=True)
+
+    assert ycov.ndim == 0
+    assert_allclose(ycov, fprime(x) ** 2 * xcov)
+
+
+def test_diagonal_2():
+    def fn(x):
+        return x**2 + 3
+
+    def fprime(x):
+        x = np.atleast_1d(x)
+        return 2 * x
+
+    x = [1, 2]
+    xcov = [3, 4]
+
+    y, ycov = propagate(fn, x, xcov, diagonal=True)
+
+    x_a = np.atleast_1d(x)
+    assert ycov.ndim == 1
+    assert_allclose(y, fn(x_a))
+
+    jac = np.diag(fprime(x_a))
+    cov_a = np.diag(xcov)
+    ycov_ref = np.linalg.multi_dot((jac, cov_a, jac.T))
+    assert ycov_ref[0, 1] == 0
+    assert ycov_ref[1, 0] == 0
+    assert_allclose(ycov, np.diag(ycov_ref))
+
+
+def test_diagonal_3():
+    def fn(x):
+        return x**2 + 1
+
+    x = [1, 2]
+    xcov = [[3, 1], [1, 4]]
+
+    y, ycov = propagate(fn, x, xcov, diagonal=True)
+
+    y_ref, ycov_ref = propagate(fn, x, xcov)
+
+    assert_allclose(y, y_ref)
+    assert_allclose(ycov, ycov_ref)
