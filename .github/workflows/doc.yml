@@ -2,8 +2,8 @@ name: doc
 
 on:
   pull_request:
-  tag:
-    - '**'
+  push:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
