@@ -138,3 +138,20 @@ def test_two_arguments_2():
 
     assert_allclose(z, z_ref)
     assert_allclose(zcov, zcov_ref)
+
+
+def test_diagonal():
+    def fn(x):
+        return x**2 + 3
+
+    def fprime(x):
+        x = np.atleast_1d(x)
+        return 2 * x
+
+    x = 2
+    xcov = 3
+
+    y, ycov = propagate(fn, x, xcov, diagonal=True)
+
+    assert ycov.ndim == 0
+    assert_allclose(ycov, fprime(x) ** 2 * xcov)
