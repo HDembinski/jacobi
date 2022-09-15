@@ -264,7 +264,6 @@ def propagate(
     x: _tp.Union[float, _Indexable[float]],
     cov: _tp.Union[float, _Indexable[float], _Indexable[_Indexable[float]]],
     *args,
-    diagonal_jacobian: bool = False,
     **kwargs,
 ) -> _tp.Tuple[np.ndarray, np.ndarray]:
     """
@@ -328,7 +327,7 @@ def propagate(
                 [1, 4]]
 
         # same result as before, but faster and uses much less memory
-        y, ycov = propagate(fn, x, xcov, diagonal_jacobian=True)
+        y, ycov = propagate(fn, x, xcov, diagonal=True)
 
     If the function accepts several arguments, their uncertainties are treated as
     uncorrelated::
@@ -385,8 +384,6 @@ def propagate(
         raise ValueError("x must have dimension 0 or 1")
 
     if kwargs.get("diagonal", False):
-        if cov_a.ndim > 1:
-            raise ValueError("cov must have dimension 0 or 1")
         return _propagate_diagonal(fn, y_a, x_a, cov_a, **kwargs)
 
     if cov_a.ndim > 2:

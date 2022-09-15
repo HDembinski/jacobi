@@ -140,7 +140,7 @@ def test_two_arguments_2():
     assert_allclose(zcov, zcov_ref)
 
 
-def test_diagonal():
+def test_diagonal_1():
     def fn(x):
         return x**2 + 3
 
@@ -155,3 +155,43 @@ def test_diagonal():
 
     assert ycov.ndim == 0
     assert_allclose(ycov, fprime(x) ** 2 * xcov)
+
+
+def test_diagonal_2():
+    def fn(x):
+        return x**2 + 3
+
+    def fprime(x):
+        x = np.atleast_1d(x)
+        return 2 * x
+
+    x = [1, 2]
+    xcov = [3, 4]
+
+    y, ycov = propagate(fn, x, xcov, diagonal=True)
+
+    x_a = np.atleast_1d(x)
+    assert ycov.ndim == 1
+    assert_allclose(y, fn(x_a))
+
+    jac = np.diag(fprime(x_a))
+    cov_a = np.diag(xcov)
+    ycov_ref = np.linalg.multi_dot((jac, cov_a, jac.T))
+    assert ycov_ref[0, 1] == 0
+    assert ycov_ref[1, 0] == 0
+    assert_allclose(ycov, np.diag(ycov_ref))
+
+
+def test_diagonal_3():
+    def fn(x):
+        return x**2 + 1
+
+    x = [1, 2]
+    xcov = [[3, 1], [1, 4]]
+
+    y, ycov = propagate(fn, x, xcov, diagonal=True)
+
+    y_ref, ycov_ref = propagate(fn, x, xcov)
+
+    assert_allclose(y, y_ref)
+    assert_allclose(ycov, ycov_ref)
