@@ -25,7 +25,7 @@ for i, fi in enumerate(fn):
         print(i, ni)
         x = np.linspace(0.1, 10, ni)
         number = 500 // ni + 10
-        r = timeit(lambda: jacobi(lambda p: f(p + x), 0), number=number) / number
+        r = timeit(lambda: jacobi(f, x, diagonal=True), number=number) / number
         t["jacobi"].append(r)
         number = 500 // ni + 1
         r = timeit(lambda: Derivative(lambda p: f(p + x))(0), number=number) / number
