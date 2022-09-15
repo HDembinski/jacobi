@@ -30,8 +30,8 @@ jobs:
         python -m pip install $(echo dist/jacobi-*.whl)'[test]'
         python -m pytest
 
-    - uses: pypa/gh-action-pypi-publish@v1
-      if: github.ref_type == 'tag'
+    - uses: pypa/gh-action-pypi-publish@release/v1
+      if: contains(github.event.ref, '/tags/')
       with:
         user: __token__
         password: ${{secrets.PYPI_TOKEN}}
