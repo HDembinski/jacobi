@@ -43,19 +43,29 @@ Examples
   from jacobi import jacobi
 
 
+  # function of one variable with auxiliary argument; returns a vector
   def f(x):
       return np.sin(x) / x
 
-  x = np.linspace(-10, 10, 1000)
 
+  x = np.linspace(-10, 10, 200)
   fx = f(x)
 
   # f(x) is a simple vectorized function, jacobian is diagonal
   fdx, fdxe = jacobi(f, x, diagonal=True)
   # fdxe is uncertainty estimate for derivative
 
-  plt.plot(x, fx, label="f(x) = sin(x) / x")
-  plt.plot(x, fdx, ls="--", label="f'(x)")
+  plt.plot(x, fx, color="k", label="$f(x) = sin(x) / x$")
+  plt.plot(x, fdx, label="$f'(x)$ computed with jacobi")
+  scale = 14
+  plt.fill_between(
+      x,
+      fdx - fdxe * 10**scale,
+      fdx + fdxe * 10**scale,
+      label=f"$f'(x)$ error estimate$\\times \\, 10^{{{scale}}}$",
+      facecolor="C0",
+      alpha=0.5,
+  )
   plt.legend()
 
 .. image:: https://hdembinski.github.io/jacobi/_images/example.svg
@@ -96,6 +106,6 @@ Smaller run-time is better (and ratio > 1).
 Precision
 ^^^^^^^^^
 
-The machine precision is indicated by the dashed line.
+The machine precision is indicated by the dashed line. Jacobi is comparable in accuracy to numdifftools. The error estimate has the right order of magnitude but slightly underestimates the true deviation. This does not matter for most applications.
 
 .. image:: https://hdembinski.github.io/jacobi/_images/precision.svg
