@@ -13,6 +13,8 @@
 
 Fast numerical derivatives for real analytic functions with arbitrary round-off error.
 
+`Click here for full documentation <https://hdembinski.github.io/jacobi>`_.
+
 Features
 --------
 
