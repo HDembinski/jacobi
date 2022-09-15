@@ -407,12 +407,17 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
 
 
 def _propagate_diagonal(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs):
-    jac = np.asarray(jacobi(fn, x, **kwargs)[0])
+    x_a = np.atleast_1d(x)
+
+    _check_x_xcov_compatibility(x_a, xcov)
+
+    jac = np.asarray(jacobi(fn, x_a, **kwargs)[0])
     assert jac.ndim <= 1
 
-    _check_x_xcov_compatibility(x, xcov)
-
     ycov = _jac_cov_product(jac, xcov)
+
+    if y.ndim == 0:
+        assert ycov.ndim == 0
 
     return y, ycov
 
@@ -439,6 +444,9 @@ def _propagate_independent(
 
         jac = np.asarray(jacobi(wrapped, x_a, *rest, **kwargs)[0])
         ycov += _jac_cov_product(jac, xcov)
+
+    if y.ndim == 0:
+        ycov = np.squeeze(ycov)
 
     return y, ycov
 
