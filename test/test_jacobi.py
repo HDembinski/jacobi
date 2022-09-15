@@ -133,11 +133,18 @@ def test_diagonal():
     def fn(x):
         return x**2 + 3
 
+    def fprime(x):
+        x = np.atleast_1d(x)
+        return 2 * x
+
     x = 2
-    jac = jacobi(fn, x, diagonal=True)
+    jac = jacobi(fn, x, diagonal=True)[0]
 
     assert jac.ndim == 0
-    assert jac == 4
+    assert jac == fprime(x)
 
     x = [1, 2]
-    jac = jacobi(fn, x, diagonal=True)
+    jac = jacobi(fn, x, diagonal=True)[0]
+
+    assert jac.ndim == 1
+    assert_allclose(jac, fprime(x))
