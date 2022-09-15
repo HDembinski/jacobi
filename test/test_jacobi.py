@@ -127,3 +127,17 @@ def test_method(method):
     else:
         assert_equal(fp, np.nan)
         assert_equal(fpe, np.inf)
+
+
+def test_diagonal():
+    def fn(x):
+        return x**2 + 3
+
+    x = 2
+    jac = jacobi(fn, x, diagonal=True)
+
+    assert jac.ndim == 0
+    assert jac == 4
+
+    x = [1, 2]
+    jac = jacobi(fn, x, diagonal=True)

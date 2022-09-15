@@ -86,7 +86,7 @@ def jacobi(
     maxgrad: int = 3,
     step: _tp.Tuple[float, float] = None,
     diagnostic: dict = None,
-):
+) -> _tp.Tuple[np.ndarray, np.ndarray]:
     """
     Return first derivative and its error estimate.
 
