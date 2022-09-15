@@ -3,7 +3,8 @@ name: doc
 on:
   pull_request:
   push:
-    branches: [main]
+    tags:
+      - '**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -30,7 +31,7 @@ jobs:
         path: doc/_build/html
 
   deploy:
-    if: github.ref_type == 'tag' || github.ref_name == 'main'
+    if: github.ref_type == 'tag'
     needs: build
     # Set permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
     permissions:
