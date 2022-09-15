@@ -140,6 +140,25 @@ def test_two_arguments_2():
     assert_allclose(zcov, zcov_ref)
 
 
+def test_bad_number_of_arguments():
+    def fn(x):
+        return x
+
+    with pytest.raises(ValueError, match="number of extra"):
+        propagate(fn, 1, 2, 3)
+
+
+def test_bad_input_dimensions():
+    def fn(x):
+        return x
+
+    with pytest.raises(ValueError):
+        propagate(fn, [[1]], 1)
+
+    with pytest.raises(ValueError):
+        propagate(fn, 1, [[[1]]])
+
+
 def test_diagonal_1():
     def fn(x):
         return x**2 + 3
