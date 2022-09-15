@@ -1,7 +1,7 @@
 name: publish
 
 on:
-  release:
+  push:
     tags:
       - '**'
   workflow_dispatch:
