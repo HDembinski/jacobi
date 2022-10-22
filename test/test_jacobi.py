@@ -206,3 +206,20 @@ def test_bad_step_1(step):
 def test_bad_method(method):
     with pytest.raises(ValueError, match="method"):
         jacobi(f1, 1, method=method)
+
+
+def test_jacobi_on_nan():
+    x = np.array([2.0, np.nan, 3.0])
+
+    d = {}
+    yd, yde = jacobi(f1, x, diagnostic=d)
+
+    assert d["iteration"][1] == 1
+    assert_allclose(
+        yd, [[4.0, np.nan, 0.0], [np.nan, np.nan, np.nan], [0.0, np.nan, 6.0]]
+    )
+    assert_allclose(
+        yde,
+        [[0.0, np.inf, 0.0], [np.inf, np.inf, np.inf], [0.0, np.inf, 0.0]],
+        atol=1e-16,
+    )

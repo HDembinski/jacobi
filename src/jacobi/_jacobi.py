@@ -85,6 +85,8 @@ def jacobi(
             raise ValueError("step[0] must be between 0 and 0.5")
         if not (0 < step[1] < 1):
             raise ValueError("step[1] must be between 0 and 1")
+    if method is not None and method not in (-1, 0, 1):
+        raise ValueError("method must be -1, 0, 1")
 
     squeeze = np.ndim(x) == 0
     x = np.atleast_1d(x).astype(float)
@@ -98,9 +100,7 @@ def jacobi(
     if diagnostic is not None:
         diagnostic["method"] = np.zeros(nx, dtype=np.int8)
         diagnostic["iteration"] = np.zeros(len(x_indices), dtype=np.uint8)
-
-    if method is not None and method not in (-1, 0, 1):
-        raise ValueError("method must be -1, 0, 1")
+        diagnostic["residual"] = [[] for _ in range(nx)]
 
     f0 = None
     jac = None
@@ -110,9 +110,6 @@ def jacobi(
         h = _steps(x[k], step or (0.25, 0.5), maxiter)
         # if method is None, auto-detect for each x[k]
         md, f0, r = _first(method, f0, fn, x, k, h[0], args)
-
-        if diagnostic is not None:
-            diagnostic["method"][ik] = md
 
         if md != 0 and step is None:
             # optimal step sizes for forward derivatives
@@ -125,13 +122,14 @@ def jacobi(
         todo = np.ones(nr, dtype=bool)
         fd = [r]
 
-        if jac is None:
+        if jac is None:  # first iteration
             jac = np.empty(r_shape + (nx,), dtype=r.dtype)
             err = np.empty(r_shape + (nx,), dtype=r.dtype)
             if diagnostic is not None:
                 diagnostic["call"] = np.zeros((nr, nx), dtype=np.uint8)
 
         if diagnostic is not None:
+            diagnostic["method"][ik] = md
             diagnostic["call"][:, ik] = 2 if md == 0 else 3
 
         for i in range(1, len(h)):
@@ -168,6 +166,11 @@ def jacobi(
                 sub_todo &= rei > rtol * np.abs(ri)
                 todo[todo1] = sub_todo
 
+            if diagnostic is not None:
+                re2 = re.copy()
+                re2[todo1] = rei
+                diagnostic["residual"][ik].append(re2)
+
             if np.sum(todo) == 0:
                 break
 
@@ -192,7 +195,7 @@ def jacobi(
 def _steps(p, step, maxiter):
     h0, factor = step
     h = p * h0
-    if h == 0:
+    if not h != 0:  # also works if p is NaN
         h = h0
     return h * factor ** np.arange(maxiter)
 
