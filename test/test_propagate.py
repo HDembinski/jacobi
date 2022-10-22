@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_allclose
-from jacobi import propagate
+from jacobi import propagate, jacobi
 import pytest
 
 
@@ -212,4 +212,30 @@ def test_diagonal_3():
     y_ref, ycov_ref = propagate(fn, x, xcov)
 
     assert_allclose(y, y_ref)
+    assert_allclose(ycov, ycov_ref)
+
+
+def test_on_nan():
+    def fn(x):
+        return x**2 + 1
+
+    x = [1.0, np.nan, 2.0]
+    xcov = [[3.0, np.nan, 1.0], [np.nan, np.nan, np.nan], [1.0, np.nan, 5.0]]
+
+    y, ycov = propagate(fn, x, xcov, diagonal=True)
+
+    # Beware: this produces a matrix with all NaNs
+    #   y_ref, ycov_ref = propagate(fn, x, xcov)
+    # The derivative cannot figure out that the off-diagonal elements
+    # of the jacobian are zero.
+
+    y_ref = [2, np.nan, 5]
+    assert_allclose(y, y_ref)
+
+    jac = jacobi(fn, x, diagonal=True)[0]
+    jac_ref = [2.0, np.nan, 4.0]
+    assert_allclose(jac, jac_ref)
+
+    # ycov_ref = jac @ np.array(xcov) @ jac.T
+    ycov_ref = [[12, np.nan, 8], [np.nan, np.nan, np.nan], [8, np.nan, 80]]
     assert_allclose(ycov, ycov_ref)
