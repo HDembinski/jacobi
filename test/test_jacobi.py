@@ -221,5 +221,5 @@ def test_jacobi_on_nan():
     assert_allclose(
         yde,
         [[0.0, np.inf, 0.0], [np.inf, np.inf, np.inf], [0.0, np.inf, 0.0]],
-        atol=1e-16,
+        atol=1e-15,
     )
