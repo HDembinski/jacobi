@@ -224,11 +224,6 @@ def test_on_nan():
 
     y, ycov = propagate(fn, x, xcov, diagonal=True)
 
-    # Beware: this produces a matrix with all NaNs
-    #   y_ref, ycov_ref = propagate(fn, x, xcov)
-    # The derivative cannot figure out that the off-diagonal elements
-    # of the jacobian are zero.
-
     y_ref = [2, np.nan, 5]
     assert_allclose(y, y_ref)
 
@@ -239,3 +234,10 @@ def test_on_nan():
     # ycov_ref = jac @ np.array(xcov) @ jac.T
     ycov_ref = [[12, np.nan, 8], [np.nan, np.nan, np.nan], [8, np.nan, 80]]
     assert_allclose(ycov, ycov_ref)
+
+    # propagate now detects the special case where jac is effectively diagonal
+    # and does the equivalent of propagate(fn, x, xcov, diagonal=True), which
+    # is nevertheless faster
+    y2, ycov2 = propagate(fn, x, xcov)
+    assert_allclose(y2, y_ref)
+    assert_allclose(ycov2, ycov_ref)

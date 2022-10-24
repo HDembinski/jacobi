@@ -135,7 +135,7 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
 
     _check_x_xcov_compatibility(x_a, xcov)
 
-    jac = np.asarray(jacobi(fn, x_a, **kwargs)[0])
+    jac = jacobi(fn, x_a, **kwargs)[0]
 
     y_len = len(y) if y.ndim == 1 else 1
 
@@ -143,6 +143,11 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
         jac = jac.reshape((y_len, len(x_a)))
     assert np.ndim(jac) == 2
 
+    # Check if jacobian is diagonal, count NaN as zero.
+    # This is important to speed up the product below and
+    # to get the right answer for covariance matrices that
+    # contain NaN values.
+    jac = _try_reduce_jacobian(jac)
     ycov = _jac_cov_product(jac, xcov)
 
     if y.ndim == 0:
@@ -213,3 +218,22 @@ def _check_x_xcov_compatibility(x: np.ndarray, xcov: np.ndarray):
     if xcov.ndim > 0 and len(xcov) != (len(x) if x.ndim == 1 else 1):
         # this works for 1D and 2D xcov
         raise ValueError("x and cov have incompatible shapes")
+
+
+def _try_reduce_jacobian(jac: np.ndarray):
+    if jac.ndim != 2 or jac.shape[0] != jac.shape[1]:
+        return jac
+    # if jacobian contains only off-diagonal elements
+    # that are zero or NaN, we reduce it to diagonal form
+    m = np.isnan(jac)
+    jac[m] = 0
+    if np.count_nonzero(_nodiag_view(jac)) == 0:
+        return np.diag(jac)
+    return jac
+
+
+def _nodiag_view(a: np.ndarray):
+    # https://stackoverflow.com/a/43761941/ @Divakar
+    m = a.shape[0]
+    p, q = a.strides
+    return np.lib.stride_tricks.as_strided(a[:, 1:], (m - 1, m), (p + q, q))
