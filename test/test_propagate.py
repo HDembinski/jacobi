@@ -81,7 +81,7 @@ def test_11():
 @pytest.mark.parametrize("diagonal", (False, True))
 def test_cov_1d_2d(ndim, diagonal):
     def fn(x):
-        return x
+        return 2 * x
 
     x = [1, 2]
     xcov = [3, 4]
@@ -92,8 +92,8 @@ def test_cov_1d_2d(ndim, diagonal):
 
     assert np.ndim(ycov) == ndim
 
-    assert_allclose(y, x)
-    assert_allclose(ycov, xcov)
+    assert_allclose(y, np.multiply(x, 2))
+    assert_allclose(ycov, np.multiply(xcov, 4))
 
 
 def test_two_arguments_1():
