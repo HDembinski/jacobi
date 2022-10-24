@@ -170,7 +170,7 @@ def _propagate_diagonal(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kw
 
     _check_x_xcov_compatibility(x_a, xcov)
 
-    jac = np.asarray(jacobi(fn, x_a, **kwargs)[0])
+    jac = jacobi(fn, x_a, **kwargs)[0]
     assert jac.ndim <= 1
 
     ycov = _jac_cov_product(jac, xcov)
@@ -201,7 +201,7 @@ def _propagate_independent(
         xcov = xcov_parts[i]
         _check_x_xcov_compatibility(x_a, xcov)
 
-        jac = np.asarray(jacobi(wrapped, x_a, *rest, **kwargs)[0])
+        jac = jacobi(wrapped, x_a, *rest, **kwargs)[0]
         ycov += _jac_cov_product(jac, xcov)
 
     if y.ndim == 0:
@@ -212,12 +212,16 @@ def _propagate_independent(
 
 def _jac_cov_product(jac: np.ndarray, xcov: np.ndarray):
     if xcov.ndim == 2:
-        return np.einsum(
-            "i,j,ij -> ij" if jac.ndim == 1 else "ij,kl,jl", jac, jac, xcov
-        )
-    elif jac.ndim == 2:
+        if jac.ndim == 2:
+            return np.einsum("ij,kl,jl", jac, jac, xcov)
+        if jac.ndim == 1:
+            return np.einsum("i,j,ij -> ij", jac, jac, xcov)
+        return jac**2 * xcov
+    assert xcov.ndim < 2
+    if jac.ndim == 2:
         if xcov.ndim == 1:
             return np.einsum("ij,kj,j", jac, jac, xcov)
+        assert xcov.ndim == 0  # xcov.ndim == 2 is already covered above
         return np.einsum("ij,kj", jac, jac) * xcov
     assert jac.ndim < 2 and xcov.ndim < 2
     return xcov * jac**2

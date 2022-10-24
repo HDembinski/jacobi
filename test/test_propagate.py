@@ -79,12 +79,13 @@ def test_11():
 
 @pytest.mark.parametrize("ndim", (1, 2))
 @pytest.mark.parametrize("diagonal", (False, True))
-def test_cov_1d_2d(ndim, diagonal):
+@pytest.mark.parametrize("len", (1, 2))
+def test_cov_1d_2d(ndim, diagonal, len):
     def fn(x):
         return 2 * x
 
-    x = [1, 2]
-    xcov = [3, 4]
+    x = [1, 2][:len]
+    xcov = [3, 4][:len]
     if ndim == 2:
         xcov = np.diag(xcov)
 
