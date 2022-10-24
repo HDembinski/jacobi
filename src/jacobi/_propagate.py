@@ -47,6 +47,15 @@ def propagate(
         If ycov is a matrix, unless y is a number. In that case, ycov is also
         reduced to a number.
 
+    Notes
+    -----
+    For callables `fn` which perform only element-wise computation, the jacobian is
+    a diagonal matrix. This special case is detected and the computation optimised,
+    although can further speed up the computation by passing the argumet `diagonal=True`.
+
+    In this special case, error propagation works correctly even if the output of `fn`
+    is NaN for some inputs.
+
     Examples
     --------
     General error propagation maps input vectors to output vectors::
