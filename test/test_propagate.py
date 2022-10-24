@@ -78,20 +78,22 @@ def test_11():
 
 
 @pytest.mark.parametrize("ndim", (1, 2))
-def test_cov_1d_2d(ndim):
+@pytest.mark.parametrize("diagonal", (False, True))
+def test_cov_1d_2d(ndim, diagonal):
     def fn(x):
         return x
 
     x = [1, 2]
-    xcov_1d = [3, 4]
-    xcov_2d = np.diag(xcov_1d)
+    xcov = [3, 4]
+    if ndim == 2:
+        xcov = np.diag(xcov)
 
-    y, ycov = propagate(fn, x, xcov_1d if ndim == 1 else xcov_2d)
+    y, ycov = propagate(fn, x, xcov, diagonal=diagonal)
 
-    assert np.ndim(ycov) == 2
+    assert np.ndim(ycov) == ndim
 
     assert_allclose(y, x)
-    assert_allclose(ycov, xcov_2d)
+    assert_allclose(ycov, xcov)
 
 
 def test_two_arguments_1():
