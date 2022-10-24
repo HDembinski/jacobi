@@ -78,20 +78,23 @@ def test_11():
 
 
 @pytest.mark.parametrize("ndim", (1, 2))
-def test_cov_1d_2d(ndim):
+@pytest.mark.parametrize("diagonal", (False, True))
+@pytest.mark.parametrize("len", (1, 2))
+def test_cov_1d_2d(ndim, diagonal, len):
     def fn(x):
-        return x
+        return 2 * x
 
-    x = [1, 2]
-    xcov_1d = [3, 4]
-    xcov_2d = np.diag(xcov_1d)
+    x = [1, 2][:len]
+    xcov = [3, 4][:len]
+    if ndim == 2:
+        xcov = np.diag(xcov)
 
-    y, ycov = propagate(fn, x, xcov_1d if ndim == 1 else xcov_2d)
+    y, ycov = propagate(fn, x, xcov, diagonal=diagonal)
 
-    assert np.ndim(ycov) == 2
+    assert np.ndim(ycov) == ndim
 
-    assert_allclose(y, x)
-    assert_allclose(ycov, xcov_2d)
+    assert_allclose(y, np.multiply(x, 2))
+    assert_allclose(ycov, np.multiply(xcov, 4))
 
 
 def test_two_arguments_1():
@@ -224,11 +227,6 @@ def test_on_nan():
 
     y, ycov = propagate(fn, x, xcov, diagonal=True)
 
-    # Beware: this produces a matrix with all NaNs
-    #   y_ref, ycov_ref = propagate(fn, x, xcov)
-    # The derivative cannot figure out that the off-diagonal elements
-    # of the jacobian are zero.
-
     y_ref = [2, np.nan, 5]
     assert_allclose(y, y_ref)
 
@@ -239,3 +237,10 @@ def test_on_nan():
     # ycov_ref = jac @ np.array(xcov) @ jac.T
     ycov_ref = [[12, np.nan, 8], [np.nan, np.nan, np.nan], [8, np.nan, 80]]
     assert_allclose(ycov, ycov_ref)
+
+    # propagate now detects the special case where jac is effectively diagonal
+    # and does the equivalent of propagate(fn, x, xcov, diagonal=True), which
+    # is nevertheless faster
+    y2, ycov2 = propagate(fn, x, xcov)
+    assert_allclose(y2, y_ref)
+    assert_allclose(ycov2, ycov_ref)

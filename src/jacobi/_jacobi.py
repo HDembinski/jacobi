@@ -154,7 +154,7 @@ def jacobi(
             # more like student's t
             rei = c[-1, -1] ** 0.5
 
-            # update estimates that have significantly smaller error
+            # update estimates that have smaller estimated error
             sub_todo = rei < re[todo]
             todo1 = todo.copy()
             todo[todo1] = sub_todo

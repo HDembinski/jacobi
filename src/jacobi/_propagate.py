@@ -47,6 +47,15 @@ def propagate(
         If ycov is a matrix, unless y is a number. In that case, ycov is also
         reduced to a number.
 
+    Notes
+    -----
+    For callables `fn` which perform only element-wise computation, the jacobian is
+    a diagonal matrix. This special case is detected and the computation optimised,
+    although can further speed up the computation by passing the argumet `diagonal=True`.
+
+    In this special case, error propagation works correctly even if the output of `fn`
+    is NaN for some inputs.
+
     Examples
     --------
     General error propagation maps input vectors to output vectors::
@@ -135,7 +144,7 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
 
     _check_x_xcov_compatibility(x_a, xcov)
 
-    jac = np.asarray(jacobi(fn, x_a, **kwargs)[0])
+    jac = jacobi(fn, x_a, **kwargs)[0]
 
     y_len = len(y) if y.ndim == 1 else 1
 
@@ -143,6 +152,11 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
         jac = jac.reshape((y_len, len(x_a)))
     assert np.ndim(jac) == 2
 
+    # Check if jacobian is diagonal, count NaN as zero.
+    # This is important to speed up the product below and
+    # to get the right answer for covariance matrices that
+    # contain NaN values.
+    jac = _try_reduce_jacobian(jac)
     ycov = _jac_cov_product(jac, xcov)
 
     if y.ndim == 0:
@@ -156,7 +170,7 @@ def _propagate_diagonal(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kw
 
     _check_x_xcov_compatibility(x_a, xcov)
 
-    jac = np.asarray(jacobi(fn, x_a, **kwargs)[0])
+    jac = jacobi(fn, x_a, **kwargs)[0]
     assert jac.ndim <= 1
 
     ycov = _jac_cov_product(jac, xcov)
@@ -187,7 +201,7 @@ def _propagate_independent(
         xcov = xcov_parts[i]
         _check_x_xcov_compatibility(x_a, xcov)
 
-        jac = np.asarray(jacobi(wrapped, x_a, *rest, **kwargs)[0])
+        jac = jacobi(wrapped, x_a, *rest, **kwargs)[0]
         ycov += _jac_cov_product(jac, xcov)
 
     if y.ndim == 0:
@@ -198,12 +212,16 @@ def _propagate_independent(
 
 def _jac_cov_product(jac: np.ndarray, xcov: np.ndarray):
     if xcov.ndim == 2:
-        return np.einsum(
-            "i,j,ij -> ij" if jac.ndim == 1 else "ij,kl,jl", jac, jac, xcov
-        )
-    elif jac.ndim == 2:
+        if jac.ndim == 2:
+            return np.einsum("ij,kl,jl", jac, jac, xcov)
+        if jac.ndim == 1:
+            return np.einsum("i,j,ij -> ij", jac, jac, xcov)
+        return jac**2 * xcov
+    assert xcov.ndim < 2
+    if jac.ndim == 2:
         if xcov.ndim == 1:
             return np.einsum("ij,kj,j", jac, jac, xcov)
+        assert xcov.ndim == 0  # xcov.ndim == 2 is already covered above
         return np.einsum("ij,kj", jac, jac) * xcov
     assert jac.ndim < 2 and xcov.ndim < 2
     return xcov * jac**2
@@ -213,3 +231,23 @@ def _check_x_xcov_compatibility(x: np.ndarray, xcov: np.ndarray):
     if xcov.ndim > 0 and len(xcov) != (len(x) if x.ndim == 1 else 1):
         # this works for 1D and 2D xcov
         raise ValueError("x and cov have incompatible shapes")
+
+
+def _try_reduce_jacobian(jac: np.ndarray):
+    if jac.ndim != 2 or jac.shape[0] != jac.shape[1]:
+        return jac
+    # if jacobian contains only off-diagonal elements
+    # that are zero or NaN, we reduce it to diagonal form
+    ndv = _nodiag_view(jac)
+    m = np.isnan(ndv)
+    ndv[m] = 0
+    if np.count_nonzero(ndv) == 0:
+        return np.diag(jac)
+    return jac
+
+
+def _nodiag_view(a: np.ndarray):
+    # https://stackoverflow.com/a/43761941/ @Divakar
+    m = a.shape[0]
+    p, q = a.strides
+    return np.lib.stride_tricks.as_strided(a[:, 1:], (m - 1, m), (p + q, q))
