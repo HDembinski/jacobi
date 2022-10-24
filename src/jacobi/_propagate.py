@@ -238,9 +238,10 @@ def _try_reduce_jacobian(jac: np.ndarray):
         return jac
     # if jacobian contains only off-diagonal elements
     # that are zero or NaN, we reduce it to diagonal form
-    m = np.isnan(jac)
-    jac[m] = 0
-    if np.count_nonzero(_nodiag_view(jac)) == 0:
+    ndv = _nodiag_view(jac)
+    m = np.isnan(ndv)
+    ndv[m] = 0
+    if np.count_nonzero(ndv) == 0:
         return np.diag(jac)
     return jac
 
