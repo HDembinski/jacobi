@@ -65,9 +65,10 @@ def jacobi(
     if diagonal:
         # TODO maybe solve this without introducing a wrapper function
         return jacobi(
-            lambda dx, x: fn(x + dx),
+            lambda dx, x, *args: fn(x + dx, *args),
             0,
             x,
+            *args,
             method=method,
             rtol=rtol,
             maxiter=maxiter,

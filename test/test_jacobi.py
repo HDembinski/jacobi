@@ -11,12 +11,12 @@ def test_squeeze():
     assert_allclose(ye, 0, atol=1e-10)
 
 
-def f1(x):
-    return x**2 + 3
+def f1(x, a):
+    return x**a + 3
 
 
-def fd1(x):
-    return 2 * x
+def fd1(x, a):
+    return a * x ** (a - 1)
 
 
 def f5(x):
@@ -113,10 +113,10 @@ def test_method_auto():
 def test_mask():
     x = np.array([1, 2, 3, 4])
     mask = np.array([True, False, False, True])
-    jac = jacobi(f1, x, mask=mask)[0]
+    jac = jacobi(f1, x, 3, mask=mask)[0]
 
     assert jac.shape == (4, 2)
-    jac_ref = np.diag(fd1(x))
+    jac_ref = np.diag(fd1(x, 3))
     jac_ref = jac_ref[:, mask]
 
     assert_allclose(jac, jac_ref)
@@ -151,28 +151,28 @@ def test_method(method):
 
 @pytest.mark.parametrize("x", [2, [1, 2]])
 def test_diagonal(x):
-    jac = jacobi(f1, x, diagonal=True)[0]
+    jac = jacobi(f1, x, 3, diagonal=True)[0]
 
     assert jac.ndim == np.ndim(x)
-    assert_allclose(jac, fd1(np.atleast_1d(x)))
+    assert_allclose(jac, fd1(np.atleast_1d(x), 3))
 
 
 @pytest.mark.parametrize("maxgrad", (0, 2, 5))
 def test_maxgrad(maxgrad):
     x = [1, 2, 3]
 
-    jac = jacobi(f1, x, maxgrad=maxgrad)[0]
+    jac = jacobi(f1, x, 3, maxgrad=maxgrad)[0]
 
-    jac_ref = np.diag(fd1(np.atleast_1d(x)))
-    assert_allclose(jac, jac_ref)
+    jac_ref = np.diag(fd1(np.atleast_1d(x), 3))
+    assert_allclose(jac, jac_ref, atol=1e-5)
 
 
 def test_rtol():
     x = [1, 2, 3]
 
-    jac, jace = jacobi(f1, x)
+    jac, jace = jacobi(f1, x, 3)
 
-    jac2, jac2e = jacobi(f1, x, rtol=0.1)
+    jac2, jac2e = jacobi(f1, x, 3, rtol=0.1)
 
     assert np.all(jac2e >= jace)
     assert_allclose(jac, jac2, rtol=0.02)
@@ -181,38 +181,38 @@ def test_rtol():
 @pytest.mark.parametrize("maxiter", (0, -1))
 def test_bad_maxiter(maxiter):
     with pytest.raises(ValueError):
-        jacobi(f1, 1, maxiter=maxiter)
+        jacobi(f1, 1, 3, maxiter=maxiter)
 
 
 @pytest.mark.parametrize("maxgrad", (-1, -0.1))
 def test_bad_maxgrad(maxgrad):
     with pytest.raises(ValueError):
-        jacobi(f1, 1, maxgrad=maxgrad)
+        jacobi(f1, 1, 3, maxgrad=maxgrad)
 
 
 @pytest.mark.parametrize("step", [0, -1, 1, 0.5])
 def test_bad_step_0(step):
     with pytest.raises(ValueError, match=r"step\[0\]"):
-        jacobi(f1, 1, step=(step, 0.5))
+        jacobi(f1, 1, 3, step=(step, 0.5))
 
 
 @pytest.mark.parametrize("step", [0, -1, 1])
 def test_bad_step_1(step):
     with pytest.raises(ValueError, match=r"step\[1\]"):
-        jacobi(f1, 1, step=(0.25, step))
+        jacobi(f1, 1, 3, step=(0.25, step))
 
 
 @pytest.mark.parametrize("method", (-2, -3, 2, 3))
 def test_bad_method(method):
     with pytest.raises(ValueError, match="method"):
-        jacobi(f1, 1, method=method)
+        jacobi(f1, 1, 3, method=method)
 
 
 def test_jacobi_on_nan():
     x = np.array([2.0, np.nan, 3.0])
 
     d = {}
-    yd, yde = jacobi(f1, x, diagnostic=d)
+    yd, yde = jacobi(f1, x, 2, diagnostic=d)
 
     assert d["iteration"][1] == 1
     assert_allclose(
