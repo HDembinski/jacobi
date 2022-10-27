@@ -120,8 +120,8 @@ def jacobi(
         # f0 is not guaranteed to be set here and can be still None
 
         if md != 0 and step is None:
-            # optimal step sizes for forward derivatives
-            h = _steps(xk, (0.125, 0.125), maxiter)
+            # need different step sizes for forward derivatives to avoid overlap
+            h = _steps(xk, (0.25, 0.125), maxiter)
 
         r = np.asarray(r, dtype=float)
         re = np.full_like(r, np.inf)
