@@ -1,16 +1,19 @@
-import typing as _tp
-from ._typing import Indexable as _Indexable
+from typing import Callable, Union, Tuple, List
+from ._typing import Indexable
 from ._jacobi import jacobi
 import numpy as np
 
 
+__all__ = ["propagate"]
+
+
 def propagate(
-    fn: _tp.Callable,
-    x: _tp.Union[float, _Indexable[float]],
-    cov: _tp.Union[float, _Indexable[float], _Indexable[_Indexable[float]]],
+    fn: Callable,
+    x: Union[float, Indexable[float]],
+    cov: Union[float, Indexable[float], Indexable[Indexable[float]]],
     *args,
     **kwargs,
-) -> _tp.Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Numerically propagates the covariance of function inputs to function outputs.
 
@@ -127,36 +130,37 @@ def propagate(
     cov_a = np.asarray(cov)
     y_a = np.asarray(fn(x_a))
 
+    # TODO lift this limitation
     if x_a.ndim > 1:
         raise ValueError("x must have dimension 0 or 1")
 
-    if kwargs.get("diagonal", False):
-        return _propagate_diagonal(fn, y_a, x_a, cov_a, **kwargs)
+    # TODO lift this limitation
+    if y_a.ndim > 1:
+        raise ValueError("f(x) must have dimension 0 or 1")
 
+    # TODO lift this limitation
     if cov_a.ndim > 2:
         raise ValueError("cov must have dimension 0, 1, or 2")
 
-    return _propagate_full(fn, y_a, x_a, cov_a, **kwargs)
+    return _propagate(fn, y_a, x_a, cov_a, **kwargs)
 
 
-def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs):
-    x_a = np.atleast_1d(x)
+def _propagate(fn: Callable, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs):
+    _check_x_xcov_compatibility(x, xcov)
 
-    _check_x_xcov_compatibility(x_a, xcov)
+    jac = jacobi(fn, x, **kwargs)[0]
 
-    jac = jacobi(fn, x_a, **kwargs)[0]
+    diagonal = kwargs.get("diagonal", False)
 
-    y_len = len(y) if y.ndim == 1 else 1
+    if jac.ndim == 2:
+        # Check if jacobian is diagonal, count NaN as zero.
+        # This is important to speed up the product below and
+        # to get the right answer for covariance matrices that
+        # contain NaN values.
+        jac = _try_reduce_jacobian(jac)
+    elif not diagonal:
+        jac.shape = (y.size, x.size)
 
-    if jac.ndim == 1:
-        jac = jac.reshape((y_len, len(x_a)))
-    assert np.ndim(jac) == 2
-
-    # Check if jacobian is diagonal, count NaN as zero.
-    # This is important to speed up the product below and
-    # to get the right answer for covariance matrices that
-    # contain NaN values.
-    jac = _try_reduce_jacobian(jac)
     ycov = _jac_cov_product(jac, xcov)
 
     if y.ndim == 0:
@@ -165,50 +169,36 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
     return y, ycov
 
 
-def _propagate_diagonal(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs):
-    _check_x_xcov_compatibility(x, xcov)
-
-    jac = jacobi(fn, x, **kwargs)[0]
-    assert jac.ndim <= 1
-
-    ycov = _jac_cov_product(jac, xcov)
-
-    if y.ndim == 0:
-        assert ycov.ndim == 0
-
-    return y, ycov
-
-
 def _propagate_independent(
-    fn,
+    fn: Callable,
     y: np.ndarray,
-    x_parts: _tp.List[np.ndarray],
-    xcov_parts: _tp.List[np.ndarray],
+    x_parts: List[np.ndarray],
+    xcov_parts: List[np.ndarray],
     **kwargs,
 ):
-    ycov = 0
+    ycov: Union[float, np.ndarray] = 0
 
     for i, x in enumerate(x_parts):
         rest = x_parts[:i] + x_parts[i + 1 :]
 
-        def wrapped(x, *rest):
-            args = rest[:i] + (x,) + rest[i:]
+        def wrapped(x):
+            args = rest[:i] + [x] + rest[i:]
             return fn(*args)
 
         xcov = xcov_parts[i]
-        _check_x_xcov_compatibility(x, xcov)
 
-        jac = jacobi(wrapped, x, *rest, **kwargs)[0]
-
-        yc = _jac_cov_product(jac, xcov)
+        yc = _propagate(wrapped, y, x, xcov)[1]
         if np.ndim(ycov) == 2 and yc.ndim == 1:
-            yc = np.diag(yc)
-        ycov += yc
+            for i, yci in enumerate(yc):
+                ycov[i, i] += yci  # type:ignore
+        else:
+            ycov += yc
 
     return y, ycov
 
 
 def _jac_cov_product(jac: np.ndarray, xcov: np.ndarray):
+    # if jac or xcov are 1D, they represent diagonal matrices
     if xcov.ndim == 2:
         if jac.ndim == 2:
             return np.einsum("ij,kl,jl", jac, jac, xcov)
