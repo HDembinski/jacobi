@@ -90,44 +90,49 @@ def jacobi(
         raise ValueError("method must be -1, 0, 1")
 
     x = np.asarray(x, dtype=float)
-    x_shape = x.shape
-    nx = max(x.size, 1)
+    if mask is not None:
+        mask = np.asarray(mask)
+        if mask.dtype != bool:
+            raise ValueError("mask must be a boolean array")
+        if mask.shape != x.shape:
+            raise ValueError("mask shape must match x shape")
 
     if diagnostic is not None:
-        diagnostic["method"] = np.zeros(nx, dtype=np.int8)
-        diagnostic["iteration"] = np.zeros(nx, dtype=np.uint8)
-        diagnostic["residual"] = [[] for _ in range(nx)]
-
-    x_indices = np.arange(nx)
-    if mask is not None:
-        mask = np.reshape(mask, -1)
-        x_indices = x_indices[mask]
+        diagnostic["method"] = np.zeros(x.size, dtype=np.int8)
+        diagnostic["iteration"] = np.zeros(x.size, dtype=np.uint8)
+        diagnostic["residual"] = [[] for _ in range(x.size)]
 
     f0 = None
     jac = None
     err = None
-    for k in x_indices:
+    it = np.nditer(x, flags=["c_index", "multi_index"])
+    while not it.finished:
+        k = it.index
+        kx = it.multi_index if it.has_multi_index else ...
+        if mask is not None and not mask[kx]:
+            it.iternext()
+            continue
+        xk = it[0]
         # if step is None, use optimal step sizes for central derivatives
-        kx = k if x.ndim > 0 else ...
-        h = _steps(x[kx], step or (0.25, 0.5), maxiter)
+        h = _steps(xk, step or (0.25, 0.5), maxiter)
         # if method is None, auto-detect for each x[k]
         md, f0, r = _first(method, f0, fn, x, kx, h[0], args)
+        # f0 is not guaranteed to be set here and can be still None
 
         if md != 0 and step is None:
             # optimal step sizes for forward derivatives
-            h = _steps(x[kx], (0.125, 0.125), maxiter)
+            h = _steps(xk, (0.125, 0.125), maxiter)
 
-        r_shape = np.shape(r)
-        r = np.reshape(r, -1)
-        re = np.full(r.size, np.inf)
-        todo = np.ones(r.size, dtype=bool)
-        fd = [r]
+        r = np.asarray(r, dtype=float)
+        re = np.full_like(r, np.inf)
+        todo = np.ones_like(r, dtype=bool)
+        fd = [np.reshape(r.copy(), -1)]
 
         if jac is None:  # first iteration
-            jac = np.zeros((r.size, nx), dtype=r.dtype)
-            err = np.zeros((r.size, nx), dtype=r.dtype)
+            jac = np.zeros(r.shape + x.shape, dtype=r.dtype)
+            err = np.zeros(r.shape + x.shape, dtype=r.dtype)
             if diagnostic is not None:
-                diagnostic["call"] = np.zeros((r.size, nx), dtype=np.uint8)
+                diagnostic["call"] = np.zeros((r.size, x.size), dtype=np.uint8)
 
         if diagnostic is not None:
             diagnostic["method"][k] = md
@@ -135,8 +140,7 @@ def jacobi(
 
         for i in range(1, len(h)):
             fdi = _derive(md, f0, fn, x, kx, h[i], args)
-            fdi = np.reshape(fdi, -1)
-            fd.append(fdi if i == 1 else fdi[todo])
+            fd.append(np.reshape(fdi, -1) if i == 1 else fdi[todo])
             if diagnostic is not None:
                 diagnostic["call"][todo, k] += 2
                 diagnostic["iteration"][k] += 1
@@ -178,14 +182,17 @@ def jacobi(
             # shrink previous vectors of estimates
             fd = [fdi[sub_todo] for fdi in fd]
 
-        jac[..., k] = r
-        err[..., k] = re
+        if jac.ndim == 0:
+            jac[...] = r
+            err[...] = re
+        elif jac.ndim == 1:
+            jac[kx] = r
+            err[kx] = re
+        else:
+            jac[(...,) + kx] = r
+            err[(...,) + kx] = re
 
-    if diagnostic is not None:
-        diagnostic["call"].shape = r_shape + x_shape
-
-    jac = np.reshape(jac, r_shape + x_shape)
-    err = np.reshape(err, r_shape + x_shape)
+        it.iternext()
 
     return jac, err
 
