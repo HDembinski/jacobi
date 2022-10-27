@@ -115,9 +115,11 @@ def test_mask():
     mask = np.array([True, False, False, True])
     jac = jacobi(f1, x, 3, mask=mask)[0]
 
-    assert jac.shape == (4, 2)
+    assert jac.shape == (4, 4)
     jac_ref = np.diag(fd1(x, 3))
-    jac_ref = jac_ref[:, mask]
+    for i, mi in enumerate(mask):
+        if not mi:
+            jac_ref[i] = 0
 
     assert_allclose(jac, jac_ref)
 

@@ -166,11 +166,9 @@ def _propagate_full(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs
 
 
 def _propagate_diagonal(fn, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs):
-    x_a = np.atleast_1d(x)
+    _check_x_xcov_compatibility(x, xcov)
 
-    _check_x_xcov_compatibility(x_a, xcov)
-
-    jac = jacobi(fn, x_a, **kwargs)[0]
+    jac = jacobi(fn, x, **kwargs)[0]
     assert jac.ndim <= 1
 
     ycov = _jac_cov_product(jac, xcov)
