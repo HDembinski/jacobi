@@ -53,8 +53,11 @@ def fd6(r):
     return r
 
 
+f7_a = np.array([[1, 2, 3], [4, 5, 6]])
+
+
 def f7(x):
-    return np.ones(3) * x**2
+    return f7_a * x**2
 
 
 @pytest.mark.parametrize(
@@ -81,21 +84,20 @@ def test_1d(fn):
 def test_0d():
     x = 2
     y, ye = jacobi(f7, x)
-    assert np.ndim(y) == 1
-    assert_allclose(y, f7(x))
+    assert np.ndim(y) == 2
+    assert_allclose(y, f7_a * 2 * x)
     assert_allclose(ye, np.zeros_like(y), atol=1e-10)
 
 
 def test_2d():
     x = [[1, 2, 3], [3, 4, 5]]
-    fd, fde = jacobi(f7, x)
+    fd, _ = jacobi(f7, x)
     assert np.ndim(fd) == 4
     fd_ref = np.zeros((2, 3, 2, 3))
     for i in range(2):
         for j in range(3):
-            fd_ref[i, j, i, j] = 2 * x[i][j]
+            fd_ref[i, j, i, j] = f7_a[i, j] * 2 * x[i][j]
     assert_allclose(fd, fd_ref)
-    # assert_allclose(fde, np.zeros_like(y), atol=1e-10)
 
 
 def test_abs_at_zero():
