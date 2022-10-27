@@ -195,15 +195,15 @@ def _propagate_independent(
             args = rest[:i] + (x,) + rest[i:]
             return fn(*args)
 
-        x_a = np.atleast_1d(x)
         xcov = xcov_parts[i]
-        _check_x_xcov_compatibility(x_a, xcov)
+        _check_x_xcov_compatibility(x, xcov)
 
-        jac = jacobi(wrapped, x_a, *rest, **kwargs)[0]
-        ycov += _jac_cov_product(jac, xcov)
+        jac = jacobi(wrapped, x, *rest, **kwargs)[0]
 
-    if y.ndim == 0:
-        ycov = np.squeeze(ycov)
+        yc = _jac_cov_product(jac, xcov)
+        if np.ndim(ycov) == 2 and yc.ndim == 1:
+            yc = np.diag(yc)
+        ycov += yc
 
     return y, ycov
 
