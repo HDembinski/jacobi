@@ -89,57 +89,61 @@ def jacobi(
     if method is not None and method not in (-1, 0, 1):
         raise ValueError("method must be -1, 0, 1")
 
-    squeeze = np.ndim(x) == 0
-    x = np.atleast_1d(x).astype(float)
-    assert x.ndim == 1
-
-    x_indices = np.arange(len(x))
+    x = np.asarray(x, dtype=float)
     if mask is not None:
-        x_indices = x_indices[mask]
-    nx = len(x_indices)
+        mask = np.asarray(mask)
+        if mask.dtype != bool:
+            raise ValueError("mask must be a boolean array")
+        if mask.shape != x.shape:
+            raise ValueError("mask shape must match x shape")
 
     if diagnostic is not None:
-        diagnostic["method"] = np.zeros(nx, dtype=np.int8)
-        diagnostic["iteration"] = np.zeros(len(x_indices), dtype=np.uint8)
-        diagnostic["residual"] = [[] for _ in range(nx)]
+        diagnostic["method"] = np.zeros(x.size, dtype=np.int8)
+        diagnostic["iteration"] = np.zeros(x.size, dtype=np.uint8)
+        diagnostic["residual"] = [[] for _ in range(x.size)]
 
     f0 = None
     jac = None
     err = None
-    for ik, k in enumerate(x_indices):
+    it = np.nditer(x, flags=["c_index", "multi_index"])
+    while not it.finished:
+        k = it.index
+        kx = it.multi_index if it.has_multi_index else ...
+        if mask is not None and not mask[kx]:
+            it.iternext()
+            continue
+        xk = it[0]
         # if step is None, use optimal step sizes for central derivatives
-        h = _steps(x[k], step or (0.25, 0.5), maxiter)
+        h = _steps(xk, step or (0.25, 0.5), maxiter)
         # if method is None, auto-detect for each x[k]
-        md, f0, r = _first(method, f0, fn, x, k, h[0], args)
+        md, f0, r = _first(method, f0, fn, x, kx, h[0], args)
+        # f0 is not guaranteed to be set here and can be still None
 
         if md != 0 and step is None:
-            # optimal step sizes for forward derivatives
-            h = _steps(x[k], (0.125, 0.125), maxiter)
+            # need different step sizes for forward derivatives to avoid overlap
+            h = _steps(xk, (0.25, 0.125), maxiter)
 
-        r_shape = np.shape(r)
-        r = np.reshape(r, -1)
-        nr = len(r)
-        re = np.full(nr, np.inf)
-        todo = np.ones(nr, dtype=bool)
-        fd = [r]
+        r = np.asarray(r, dtype=float)
+        re = np.full_like(r, np.inf)
+        todo = np.ones_like(r, dtype=bool)
+        fd = [np.reshape(r.copy(), -1)]
 
         if jac is None:  # first iteration
-            jac = np.empty(r_shape + (nx,), dtype=r.dtype)
-            err = np.empty(r_shape + (nx,), dtype=r.dtype)
+            jac = np.zeros(r.shape + x.shape, dtype=r.dtype)
+            err = np.zeros(r.shape + x.shape, dtype=r.dtype)
             if diagnostic is not None:
-                diagnostic["call"] = np.zeros((nr, nx), dtype=np.uint8)
+                diagnostic["call"] = np.zeros((r.size, x.size), dtype=np.uint8)
 
         if diagnostic is not None:
-            diagnostic["method"][ik] = md
-            diagnostic["call"][:, ik] = 2 if md == 0 else 3
+            diagnostic["method"][k] = md
+            diagnostic["call"][:, k] = 2 if md == 0 else 3
 
         for i in range(1, len(h)):
-            fdi = _derive(md, f0, fn, x, k, h[i], args)
-            fdi = np.reshape(fdi, -1)
-            fd.append(fdi if i == 1 else fdi[todo])
+            fdi = _derive(md, f0, fn, x, kx, h[i], args)
+            fd.append(np.reshape(fdi, -1) if i == 1 else fdi[todo])
             if diagnostic is not None:
-                diagnostic["call"][todo, ik] += 2
-                diagnostic["iteration"][ik] += 1
+                diagnostic["call"][todo, k] += 2
+                diagnostic["iteration"][k] += 1
 
             # polynomial fit with one extra degree of freedom;
             # use latest maxgrad + 1 data points
@@ -170,7 +174,7 @@ def jacobi(
             if diagnostic is not None:
                 re2 = re.copy()
                 re2[todo1] = rei
-                diagnostic["residual"][ik].append(re2)
+                diagnostic["residual"][k].append(re2)
 
             if np.sum(todo) == 0:
                 break
@@ -178,17 +182,17 @@ def jacobi(
             # shrink previous vectors of estimates
             fd = [fdi[sub_todo] for fdi in fd]
 
-        jac[..., ik] = r.reshape(r_shape)
-        err[..., ik] = re.reshape(r_shape)
+        if jac.ndim == 0:
+            jac[...] = r
+            err[...] = re
+        elif jac.ndim == 1:
+            jac[kx] = r
+            err[kx] = re
+        else:
+            jac[(...,) + kx] = r
+            err[(...,) + kx] = re
 
-    if diagnostic is not None:
-        diagnostic["call"].shape = r_shape + (nx,)
-
-    if squeeze:
-        if diagnostic is not None:
-            diagnostic["call"] = np.squeeze(diagnostic["call"])
-        jac = np.squeeze(jac)
-        err = np.squeeze(err)
+        it.iternext()
 
     return jac, err
 

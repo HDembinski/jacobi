@@ -53,8 +53,11 @@ def fd6(r):
     return r
 
 
+f7_a = np.array([[1, 2, 3], [4, 5, 6]])
+
+
 def f7(x):
-    return np.ones(3) * x**2
+    return f7_a * x**2
 
 
 @pytest.mark.parametrize(
@@ -70,7 +73,7 @@ def f7(x):
         (f6, fd6),
     ],
 )
-def test_jacobi(fn):
+def test_1d(fn):
     x = np.array([1, 2, 3], dtype=float)
     f, fd = fn
     y, ye = jacobi(f, x)
@@ -78,12 +81,23 @@ def test_jacobi(fn):
     assert_allclose(ye, np.zeros_like(y), atol=1e-10)
 
 
-def test_jacobi_0d():
+def test_0d():
     x = 2
     y, ye = jacobi(f7, x)
-    assert np.ndim(y) == 1
-    assert_allclose(y, f7(x))
+    assert np.ndim(y) == 2
+    assert_allclose(y, f7_a * 2 * x)
     assert_allclose(ye, np.zeros_like(y), atol=1e-10)
+
+
+def test_2d():
+    x = [[1, 2, 3], [3, 4, 5]]
+    fd, _ = jacobi(f7, x)
+    assert np.ndim(fd) == 4
+    fd_ref = np.zeros((2, 3, 2, 3))
+    for i in range(2):
+        for j in range(3):
+            fd_ref[i, j, i, j] = f7_a[i, j] * 2 * x[i][j]
+    assert_allclose(fd, fd_ref)
 
 
 def test_abs_at_zero():
@@ -115,9 +129,11 @@ def test_mask():
     mask = np.array([True, False, False, True])
     jac = jacobi(f1, x, 3, mask=mask)[0]
 
-    assert jac.shape == (4, 2)
+    assert jac.shape == (4, 4)
     jac_ref = np.diag(fd1(x, 3))
-    jac_ref = jac_ref[:, mask]
+    for i, mi in enumerate(mask):
+        if not mi:
+            jac_ref[i] = 0
 
     assert_allclose(jac, jac_ref)
 
@@ -170,12 +186,11 @@ def test_maxgrad(maxgrad):
 def test_rtol():
     x = [1, 2, 3]
 
-    jac, jace = jacobi(f1, x, 3)
+    jac, jace = jacobi(f1, x, 3, rtol=0.1)
+    jac_ref, jace_ref = jacobi(f1, x, 3)
 
-    jac2, jac2e = jacobi(f1, x, 3, rtol=0.1)
-
-    assert np.all(jac2e >= jace)
-    assert_allclose(jac, jac2, rtol=0.02)
+    assert np.all(jace >= jace_ref)
+    assert_allclose(jac, jac_ref, rtol=0.03)
 
 
 @pytest.mark.parametrize("maxiter", (0, -1))
@@ -208,7 +223,7 @@ def test_bad_method(method):
         jacobi(f1, 1, 3, method=method)
 
 
-def test_jacobi_on_nan():
+def test_on_nan():
     x = np.array([2.0, np.nan, 3.0])
 
     d = {}
