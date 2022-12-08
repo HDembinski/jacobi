@@ -179,15 +179,14 @@ def _propagate_independent(
     ycov: Union[float, np.ndarray] = 0
 
     for i, x in enumerate(x_parts):
-        rest = x_parts[:i] + x_parts[i + 1 :]
 
         def wrapped(x):
-            args = rest[:i] + [x] + rest[i:]
+            args = x_parts[:i] + [x] + x_parts[i + 1 :]
             return fn(*args)
 
         xcov = xcov_parts[i]
 
-        yc = _propagate(wrapped, y, x, xcov)[1]
+        yc = _propagate(wrapped, y, x, xcov, **kwargs)[1]
         if np.ndim(ycov) == 2 and yc.ndim == 1:
             for i, yci in enumerate(yc):
                 ycov[i, i] += yci  # type:ignore
