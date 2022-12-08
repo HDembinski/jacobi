@@ -178,16 +178,33 @@ def _propagate_independent(
 ):
     ycov: Union[float, np.ndarray] = 0
 
+    mask = kwargs.get("mask", None)
+    mask_parts = []
+    if mask is None:
+        kwargs2 = kwargs
+    else:
+        kwargs2 = kwargs.copy()
+        for i, x in enumerate(x_parts):
+            # this fails if mask is not indexable, but mask is always an array
+            if np.shape(x) == np.shape(mask[i]):
+                mask_parts.append(mask[i])
+            elif np.shape(x) == np.shape(mask):
+                mask_parts.append(mask)
+            else:
+                raise ValueError("mask shapes do not match arguments")
+
     for i, x in enumerate(x_parts):
-        rest = x_parts[:i] + x_parts[i + 1 :]
 
         def wrapped(x):
-            args = rest[:i] + [x] + rest[i:]
+            args = x_parts[:i] + [x] + x_parts[i + 1 :]
             return fn(*args)
 
         xcov = xcov_parts[i]
 
-        yc = _propagate(wrapped, y, x, xcov)[1]
+        if mask_parts:
+            kwargs2["mask"] = mask_parts[i]
+
+        yc = _propagate(wrapped, y, x, xcov, **kwargs2)[1]
         if np.ndim(ycov) == 2 and yc.ndim == 1:
             for i, yci in enumerate(yc):
                 ycov[i, i] += yci  # type:ignore
