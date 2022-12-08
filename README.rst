@@ -5,11 +5,13 @@
 ========
 
 .. image:: https://img.shields.io/pypi/v/jacobi
-  :target: https://pypi.org/project/jacobi
+   :target: https://pypi.org/project/jacobi
 .. image:: https://img.shields.io/badge/github-docs-success
-  :target: https://hdembinski.github.io/jacobi
+   :target: https://hdembinski.github.io/jacobi
 .. image:: https://img.shields.io/badge/github-source-blue
-  :target: https://github.com/HDembinski/jacobi
+   :target: https://github.com/HDembinski/jacobi
+.. image:: https://zenodo.org/badge/270612858.svg
+   :target: https://zenodo.org/badge/latestdoi/270612858
 
 Fast numerical derivatives for real analytic functions with arbitrary round-off error.
 
