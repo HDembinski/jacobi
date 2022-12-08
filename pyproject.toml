@@ -11,3 +11,4 @@ write_to = "src/jacobi/_version.py"
 [tool.mypy]
 ignore_missing_imports = true
 allow_redefinition = true
+no_implicit_optional = false
