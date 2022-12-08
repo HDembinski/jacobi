@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 from jacobi import propagate, jacobi
 import pytest
+from numpy.testing import assert_equal
 
 
 def test_00():
@@ -218,7 +219,7 @@ def test_diagonal_3():
     assert_allclose(ycov, ycov_ref)
 
 
-def test_on_nan():
+def test_on_nan_1():
     def fn(x):
         return x**2 + 1
 
@@ -244,3 +245,66 @@ def test_on_nan():
     y2, ycov2 = propagate(fn, x, xcov)
     assert_allclose(y2, y_ref)
     assert_allclose(ycov2, ycov_ref)
+
+
+def test_on_nan_2():
+    nan = np.nan
+    a = np.array([4303.16536081, nan, 2586.42395464, nan, 2010.31141544, nan, nan, nan])
+    a_var = np.array(
+        [7.89977628e04, nan, 1.87676043e22, nan, 8.70294972e04, nan, nan, nan]
+    )
+    b = np.array([0.48358779, 0.0, 0.29371395, 0.0, 0.29838083, 0.58419942, 0.0, 0.0])
+    b_var = np.array(
+        [
+            2.31907643e-05,
+            0.00000000e00,
+            2.17812131e-05,
+            0.00000000e00,
+            2.82526004e-05,
+            1.66067899e-03,
+            0.00000000e00,
+            0.00000000e00,
+        ]
+    )
+
+    def f(a, b):
+        return a * b
+
+    c, c_var = propagate(f, a, a_var, b, b_var, diagonal=True)
+
+    mask = np.isnan(a) | np.isnan(b)
+    mask_var = mask | np.isnan(a_var) | np.isnan(b_var)
+    assert_equal(np.isnan(c), mask)
+    assert_equal(np.isnan(c_var), mask_var)
+
+
+def test_mask_on_binary_function_1():
+    a = np.array([1.0, 2.0])
+    a_var = 0.01 * a
+    b = np.array([3.0, 4.0])
+    b_var = 0.01 * b
+
+    def f(a, b):
+        return a * b
+
+    mask = [False, True]
+    c, c_var = propagate(f, a, a_var, b, b_var, mask=mask)
+
+    assert c_var[0] == 0
+    assert c_var[1] > 0
+
+
+def test_mask_on_binary_function_2():
+    a = np.array([1.0, 2.0])
+    a_var = 0.01 * a
+    b = np.array([3.0, 4.0, 5.0])
+    b_var = 0.01 * b
+
+    def f(a, b):
+        return np.outer(a, b).ravel()
+
+    mask = [[False, True], [True, False, True]]
+    c1, c1_var = propagate(f, a, a_var, b, b_var, mask=mask)
+    c2, c2_var = propagate(f, a, a_var, b, b_var)
+
+    assert np.sum(np.diag(c2_var) > np.diag(c1_var)) > 0

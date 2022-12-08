@@ -64,7 +64,7 @@ def jacobi(
     """
     if diagonal:
         # TODO maybe solve this without introducing a wrapper function
-        return jacobi(
+        j, je = jacobi(
             lambda dx, x, *args: fn(x + dx, *args),
             0,
             x,
@@ -76,6 +76,10 @@ def jacobi(
             step=step,
             diagnostic=diagnostic,
         )
+        if mask is not None:
+            j[~mask] = 0.0
+            je[~mask] = 0.0
+        return j, je
 
     if maxiter <= 0:
         raise ValueError("maxiter must be > 0")
