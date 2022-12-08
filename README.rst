@@ -13,7 +13,7 @@
 .. image:: https://zenodo.org/badge/270612858.svg
    :target: https://zenodo.org/badge/latestdoi/270612858
 
-Fast numerical derivatives for real analytic functions with arbitrary round-off error.
+Fast numerical derivatives for analytic functions with arbitrary round-off error and error propagation.
 
 `Click here for full documentation <https://hdembinski.github.io/jacobi>`_.
 
