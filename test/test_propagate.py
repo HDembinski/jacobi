@@ -41,7 +41,6 @@ def test_10():
 
     x = np.arange(2)
     for xcov in ([1, 1], [[1, 0], [0, 1]]):
-
         y, ycov = propagate(fn, x, xcov)
         assert_allclose(y, fn(x))
         jac = np.ones((1, len(x)))

@@ -38,13 +38,13 @@ repos:
 
 # Python formatting
 - repo: https://github.com/psf/black
-  rev: 22.12.0
+  rev: 23.3.0
   hooks:
   - id: black
 
 # Python type checking
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: 'v0.991'
+  rev: 'v1.2.0'
   hooks:
   - id: mypy
     args: [src]
@@ -52,7 +52,7 @@ repos:
 
 # doc string checking
 - repo: https://github.com/PyCQA/pydocstyle
-  rev: 6.1.1
+  rev: 6.3.0
   hooks:
   - id: pydocstyle
     files: src/jacobi/.*\.py
