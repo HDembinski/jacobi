@@ -32,7 +32,7 @@ repos:
 
 # Python linter (Flake8)
 - repo: https://github.com/PyCQA/flake8
-  rev: 6.0.0
+  rev: 6.1.0
   hooks:
   - id: flake8
 
@@ -44,7 +44,7 @@ repos:
 
 # Python type checking
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: 'v1.4.1'
+  rev: 'v1.5.0'
   hooks:
   - id: mypy
     args: [src]
