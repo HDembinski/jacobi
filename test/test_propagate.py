@@ -307,3 +307,11 @@ def test_mask_on_binary_function_2():
     c2, c2_var = propagate(f, a, a_var, b, b_var)
 
     assert np.sum(np.diag(c2_var) > np.diag(c1_var)) > 0
+
+
+@pytest.mark.parametrize("method", (None, -1, 0, 1))
+def test_non_array_arguments(method):
+    def fn(x):
+        return [x[0], 2 * x[1], x[1]]
+
+    y, ycov = propagate(fn, (1, 2), ((1, 0), (0, 1)), method=method)
