@@ -22,8 +22,11 @@ def jacobi(
     Parameters
     ----------
     fn : Callable
-        Function with the signature `fn(x, *args)`, where `x` is a number or an
-        array of numbers and `*args` are optional auxiliary arguments.
+        Function with the signature `fn(x, *args)`, where `x` is a number or a sequence
+        of numbers and `*args` are optional auxiliary arguments. The function must
+        return a number or a regular shape of numbers (ideally as a numpy array). The
+        length of `x` can differ from the output sequence. Derivatives are only
+        computed with respect to `x`, the auxiliary arguments are ignored.
     x : Number or array of numbers
         The derivative is computed with respect to `x`. If `x` is an array, the Jacobi
         matrix is computed with respect to each element of `x`.
@@ -120,7 +123,7 @@ def jacobi(
         # if step is None, use optimal step sizes for central derivatives
         h = _steps(xk, step or (0.25, 0.5), maxiter)
         # if method is None, auto-detect for each x[k]
-        md, f0, r = _first(method, f0, fn, x, kx, h[0], args)
+        fn, md, f0, r = _first(method, f0, fn, x, kx, h[0], args)
         # f0 is not guaranteed to be set here and can be still None
 
         if md != 0 and step is None:
@@ -224,7 +227,10 @@ def _derive(mode, f0, f, x, i, h, args):
     return (-3 * f0 + 4 * f1 - f2) * (0.5 / h)
 
 
-def _first(method, f0, f, x, i, h, args):
+def _first(method, f0, fn, x, i, h, args):
+    # This is the first derivative that we calculate.
+    # This function is special because we collect a lot of diagnostic
+    # information about the function for the remainder of the iterations.
     norm = 0.5 / h
     f1 = None
     f2 = None
@@ -233,8 +239,9 @@ def _first(method, f0, f, x, i, h, args):
         x2 = x.copy()
         x1[i] -= h
         x2[i] += h
-        f1 = f(x1, *args)
-        f2 = f(x2, *args)
+        f1 = fn(x1, *args)
+        fn, f1 = _wrap_function_if_needed(fn, f1)
+        f2 = fn(x2, *args)
         if method is None:
             if np.any(np.isnan(f1)):  # forward method
                 method = 1
@@ -243,19 +250,33 @@ def _first(method, f0, f, x, i, h, args):
             else:
                 method = 0
     if method == 0:
-        return method, None, (f1 - f2) * norm
+        return fn, method, None, (f1 - f2) * norm
     if f0 is None:
-        f0 = f(x, *args)
+        f0 = fn(x, *args)
+        fn, f0 = _wrap_function_if_needed(fn, f0)
     if method == -1:
         h = -h
         norm = -norm
     if f1 is None:
         x1 = x.copy()
         x1[i] += h
-        f1 = f(x1, *args)
+        f1 = fn(x1, *args)
     elif method == 1:
         f1 = f2
     x2 = x.copy()
     x2[i] += 2 * h
-    f2 = f(x2, *args)
-    return method, f0, (-3 * f0 + 4 * f1 - f2) * norm
+    f2 = fn(x2, *args)
+    return fn, method, f0, (-3 * f0 + 4 * f1 - f2) * norm
+
+
+def _wrap_function_if_needed(fn, fval):
+    if not isinstance(fval, float):
+        try:
+            fval = np.asarray(fval, dtype=float)
+        except ValueError as e:
+            raise ValueError(
+                "function return value cannot be converted into "
+                "1D numpy array of floats"
+            ) from e
+        return lambda *args: np.asarray(fn(*args)), fval
+    return fn, fval
