@@ -45,7 +45,7 @@ no_implicit_optional = false
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "--doctest-modules --strict-config --strict-markers -q -ra --ff"
-testpaths = ["src/jacobi", "tests"]
+testpaths = ["src/jacobi", "test"]
 filterwarnings = [
     "error::numpy.VisibleDeprecationWarning",
     "error::DeprecationWarning",
