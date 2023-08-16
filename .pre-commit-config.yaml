@@ -30,11 +30,12 @@ repos:
   - id: file-contents-sorter
   - id: trailing-whitespace
 
-# Python linter (Flake8)
-- repo: https://github.com/PyCQA/flake8
-  rev: 6.1.0
+# Ruff linter, replacement for flake8, isort, pydocstyle
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: 'v0.0.280'
   hooks:
-  - id: flake8
+    - id: ruff
+      args: [--fix, --exit-non-zero-on-fix]
 
 # Python formatting
 - repo: https://github.com/psf/black
@@ -49,10 +50,3 @@ repos:
   - id: mypy
     args: [src]
     pass_filenames: false
-
-# doc string checking
-- repo: https://github.com/PyCQA/pydocstyle
-  rev: 6.3.0
-  hooks:
-  - id: pydocstyle
-    files: src/jacobi/.*\.py

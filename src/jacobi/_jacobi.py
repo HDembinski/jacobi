@@ -42,8 +42,8 @@ def jacobi(
         Whether to compute central (0), forward (1) or backward derivatives (-1).
         The default (None) uses auto-detection.
     mask : array or None, optional
-        If `x` is an array and `mask` is not None, compute the Jacobi matrix only for the
-        part of the array selected by the mask.
+        If `x` is an array and `mask` is not None, compute the Jacobi matrix only for
+        the part of the array selected by the mask.
     rtol : float, optional
         Relative tolerance for the derivative. The algorithm stops when this relative
         tolerance is reached. If 0 (the default), the algorithm iterates until the

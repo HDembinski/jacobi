@@ -53,7 +53,8 @@ def propagate(
     -----
     For callables `fn` which perform only element-wise computation, the jacobian is
     a diagonal matrix. This special case is detected and the computation optimised,
-    although can further speed up the computation by passing the argumet `diagonal=True`.
+    although can further speed up the computation by passing the argument
+    `diagonal=True`.
 
     In this special case, error propagation works correctly even if the output of `fn`
     is NaN for some inputs.
