@@ -24,12 +24,11 @@ def propagate(
     Parameters
     ----------
     fn: callable
-        Function that computes r = fn(x, [y, ...]). The arguments of the function are
-        each allowed to be scalars or one-dimensional arrays. If the function accepts
-        several arguments, their uncertainties are treated as uncorrelated. Functions
-        that accept several correlated arguments must be wrapped, see examples. The
-        result of the function may be a scalar or a one-dimensional array of floats with
-        a different lenth as the input.
+        Function with the signature `fn(x, *args)`, where `x` is a number or a sequence
+        of numbers and `*args` are optional auxiliary arguments. The function must
+        return a number or a sequence of numbers (ideally as a numpy array). The
+        length of `x` can differ from the input sequence. Error propagation is only
+        performed with respect to `x`, the auxiliary arguments are ignored.
     x: float or array-like with shape (N,)
         Input vector. An array-like is converted before passing it to the callable.
     cov: float or array-like with shape (N,) or shape(N, N)
