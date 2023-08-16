@@ -62,27 +62,24 @@ def propagate(
 
     Examples
     --------
-    General error propagation maps input vectors to output vectors::
+    General error propagation maps input vectors to output vectors.
 
     >>> def fn(x):
     ...     return x ** 2 + 1
-
     >>> x = [1, 2]
     >>> xcov = [[3, 1],
     ...         [1, 4]]
-
     >>> y, ycov = propagate(fn, x, xcov)
 
-    In the previous example, the function y = fn(x) treats all x values independently
-    and the Jacobian computed from fn(x) has zero off-diagonal entries. In this case,
-    one can speed up the calculation significantly with a special keyword::
+    In the previous example, the function ``y = fn(x)`` treats all x values
+    independently and the Jacobian computed from ``fn(x)`` has zero off-diagonal
+    entries. In this case, one can speed up the calculation significantly with a special
+    keyword.
 
     >>> y, ycov = propagate(fn, x, xcov, diagonal=True)
 
-    This produces the same result, but is faster and uses less memory.
-
-    If the function accepts several arguments, their uncertainties are treated as
-    uncorrelated::
+    This produces the same result, but is faster and uses less memory. If the function
+    accepts several arguments, their uncertainties are treated as uncorrelated.
 
     >>> def fn(x, y):
     ...    return x + y
@@ -92,11 +89,10 @@ def propagate(
     >>> ycov = 3
     >>> z, zcov = propagate(fn, x, xcov, y, ycov)
 
-    Functions that accept several correlated arguments must be wrapped::
+    Functions that accept several correlated arguments must be wrapped.
 
     >>> def fn(x, y):
     ...     return x + y
-
     >>> rho_xy = 0.5
     >>> cov_xy = rho_xy * (xcov * ycov) ** 0.5
     >>> r = [x, y]
