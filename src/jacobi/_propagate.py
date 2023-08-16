@@ -63,14 +63,14 @@ def propagate(
     --------
     General error propagation maps input vectors to output vectors::
 
-        def fn(x):
-            return x ** 2 + 1
+    >>> def fn(x):
+    ...     return x ** 2 + 1
 
-        x = [1, 2]
-        xcov = [[3, 1],
-                [1, 4]]
+    >>> x = [1, 2]
+    >>> xcov = [[3, 1],
+    ...         [1, 4]]
 
-        y, ycov = propagate(fn, x, xcov)
+    >>> y, ycov = propagate(fn, x, xcov)
 
     In the previous example, the function y = fn(x) treats all x values independently,
     so the Jacobian computed from fn(x) has zero off-diagonal entries. In this case,
@@ -82,35 +82,35 @@ def propagate(
     If the function accepts several arguments, their uncertainties are treated as
     uncorrelated::
 
-        def fn(x, y):
-            return x + y
+    >>> def fn(x, y):
+    ...    return x + y
 
-        x = 1
-        y = 2
-        xcov = 2
-        ycov = 3
+    >>> x = 1
+    >>> y = 2
+    >>> xcov = 2
+    >>> ycov = 3
 
-        z, zcov = propagate(fn, x, xcov, y, ycov)
+    >>> z, zcov = propagate(fn, x, xcov, y, ycov)
 
     Functions that accept several correlated arguments must be wrapped::
 
-        def fn(x, y):
-            return x + y
+    >>> def fn(x, y):
+    ...     return x + y
 
-        x = 1
-        y = 2
-        sigma_x = 3
-        sigma_y = 4
-        rho_xy = 0.5
+    >>> x = 1
+    >>> y = 2
+    >>> sigma_x = 3
+    >>> sigma_y = 4
+    >>> rho_xy = 0.5
 
-        r = [x, y]
-        cov_xy = rho_xy * sigma_x * sigma_y
-        rcov = [[sigma_x ** 2, cov_xy], [cov_xy, sigma_y ** 2]]
+    >>> r = [x, y]
+    >>> cov_xy = rho_xy * sigma_x * sigma_y
+    >>> rcov = [[sigma_x ** 2, cov_xy], [cov_xy, sigma_y ** 2]]
 
-        def fn_wrapped(r):
-            return fn(r[0], r[1])
+    >>> def fn_wrapped(r):
+    ...     return fn(r[0], r[1])
 
-        z, zcov = propagate(fn_wrapped, r, rcov)
+    >>> z, zcov = propagate(fn_wrapped, r, rcov)
 
     See Also
     --------
