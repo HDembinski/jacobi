@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jacobi"
 requires-python = ">=3.8"
-description = "Compute numerical derivatives"
+description = "Fast numerical derivatives for analytic functions with arbitrary round-off error and error propagation"
 authors = [{ name = "Hans Dembinski" }, { email = "hans.dembinski@gmail.com" }]
 dynamic = ["version"]
 dependencies = ["numpy"]
