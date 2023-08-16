@@ -24,11 +24,12 @@ def propagate(
     Parameters
     ----------
     fn: callable
-        Function with the signature `fn(x, *args)`, where `x` is a number or a sequence
-        of numbers and `*args` are optional auxiliary arguments. The function must
-        return a number or a sequence of numbers (ideally as a numpy array). The
-        length of `x` can differ from the output sequence. Error propagation is only
-        performed with respect to `x`, the auxiliary arguments are ignored.
+        Function with the signature `fn(x, [y, ...])`, where `x` is a number or a
+        sequence of numbers, likewise if other arguments are present they must have the
+        same format. The function must return a number or a sequence of numbers (ideally
+        as a numpy array). The length of `x` can differ from the output sequence. The
+        function should accept more than one argument only if there are no
+        correlations between these arguments. See example below for use cases.
     x: float or array-like with shape (N,)
         Input vector. An array-like is converted before passing it to the callable.
     cov: float or array-like with shape (N,) or shape(N, N)
@@ -53,63 +54,50 @@ def propagate(
     -----
     For callables `fn` which perform only element-wise computation, the jacobian is
     a diagonal matrix. This special case is detected and the computation optimised,
-    although can further speed up the computation by passing the argumet `diagonal=True`.
+    although can further speed up the computation by passing the argument
+    `diagonal=True`.
 
     In this special case, error propagation works correctly even if the output of `fn`
     is NaN for some inputs.
 
     Examples
     --------
-    General error propagation maps input vectors to output vectors::
+    General error propagation maps input vectors to output vectors.
 
-        def fn(x):
-            return x ** 2 + 1
+    >>> def fn(x):
+    ...     return x ** 2 + 1
+    >>> x = [1, 2]
+    >>> xcov = [[3, 1],
+    ...         [1, 4]]
+    >>> y, ycov = propagate(fn, x, xcov)
 
-        x = [1, 2]
-        xcov = [[3, 1],
-                [1, 4]]
+    In the previous example, the function ``y = fn(x)`` treats all x values
+    independently and the Jacobian computed from ``fn(x)`` has zero off-diagonal
+    entries. In this case, one can speed up the calculation significantly with a special
+    keyword.
 
-        y, ycov = propagate(fn, x, xcov)
+    >>> y, ycov = propagate(fn, x, xcov, diagonal=True)
 
-    In the previous example, the function y = fn(x) treats all x values independently,
-    so the Jacobian computed from fn(x) has zero off-diagonal entries. In this case,
-    one can speed up the calculation significantly with a special keyword::
+    This produces the same result, but is faster and uses less memory. If the function
+    accepts several arguments, their uncertainties are treated as uncorrelated.
 
-        # same result as before, but faster and uses much less memory
-        y, ycov = propagate(fn, x, xcov, diagonal=True)
+    >>> def fn(x, y):
+    ...    return x + y
+    >>> x = 1
+    >>> y = 2
+    >>> xcov = 2
+    >>> ycov = 3
+    >>> z, zcov = propagate(fn, x, xcov, y, ycov)
 
-    If the function accepts several arguments, their uncertainties are treated as
-    uncorrelated::
+    Functions that accept several correlated arguments must be wrapped.
 
-        def fn(x, y):
-            return x + y
-
-        x = 1
-        y = 2
-        xcov = 2
-        ycov = 3
-
-        z, zcov = propagate(fn, x, xcov, y, ycov)
-
-    Functions that accept several correlated arguments must be wrapped::
-
-        def fn(x, y):
-            return x + y
-
-        x = 1
-        y = 2
-        sigma_x = 3
-        sigma_y = 4
-        rho_xy = 0.5
-
-        r = [x, y]
-        cov_xy = rho_xy * sigma_x * sigma_y
-        rcov = [[sigma_x ** 2, cov_xy], [cov_xy, sigma_y ** 2]]
-
-        def fn_wrapped(r):
-            return fn(r[0], r[1])
-
-        z, zcov = propagate(fn_wrapped, r, rcov)
+    >>> def fn(x, y):
+    ...     return x + y
+    >>> rho_xy = 0.5
+    >>> cov_xy = rho_xy * (xcov * ycov) ** 0.5
+    >>> r = [x, y]
+    >>> rcov = [[xcov, cov_xy], [cov_xy, ycov]]
+    >>> z, zcov = propagate(lambda r: fn(r[0], r[1]), r, rcov)
 
     See Also
     --------
