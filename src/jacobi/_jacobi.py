@@ -25,7 +25,7 @@ def jacobi(
         Function with the signature `fn(x, *args)`, where `x` is a number or a sequence
         of numbers and `*args` are optional auxiliary arguments. The function must
         return a number or a sequence of numbers (ideally as a numpy array). The length
-        of `x` can differ from the input sequence.  Derivatives are only computed with
+        of `x` can differ from the output sequence.  Derivatives are only computed with
         respect to `x`, the auxiliary arguments are ignored.
     x : Number or array of numbers
         The derivative is computed with respect to `x`. If `x` is an array, the Jacobi

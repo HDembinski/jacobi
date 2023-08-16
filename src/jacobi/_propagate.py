@@ -27,7 +27,7 @@ def propagate(
         Function with the signature `fn(x, *args)`, where `x` is a number or a sequence
         of numbers and `*args` are optional auxiliary arguments. The function must
         return a number or a sequence of numbers (ideally as a numpy array). The
-        length of `x` can differ from the input sequence. Error propagation is only
+        length of `x` can differ from the output sequence. Error propagation is only
         performed with respect to `x`, the auxiliary arguments are ignored.
     x: float or array-like with shape (N,)
         Input vector. An array-like is converted before passing it to the callable.
