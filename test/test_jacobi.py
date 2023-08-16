@@ -238,3 +238,28 @@ def test_on_nan():
         [[0.0, np.inf, 0.0], [np.inf, np.inf, np.inf], [0.0, np.inf, 0.0]],
         atol=1e-15,
     )
+
+
+@pytest.mark.parametrize("method", (None, -1, 0, 1))
+@pytest.mark.parametrize("fn", (lambda x: (x[0], 2 * x[1], x[1]), lambda x: x[0]))
+def test_non_array_arguments_and_return_value(method, fn):
+    def fn(x):
+        return [x[0], 2 * x[1], x[1] ** 2]
+
+    j, _ = jacobi(fn, (1, 2), method=method)
+    assert_allclose(j, [(1, 0), (0, 2), (0, 4)])
+
+
+@pytest.mark.parametrize("method", (None, -1, 0, 1))
+def test_bad_return_value_1(method):
+    with pytest.raises(
+        ValueError, match="function return value cannot be converted into numpy array"
+    ):
+        jacobi(lambda x: [1, [1, 2]], (1, 2), method=method)
+
+
+@pytest.mark.parametrize("method", (None, -1, 0, 1))
+@pytest.mark.parametrize("fn", (lambda x: "s", lambda x: ("a", "b")))
+def test_bad_return_value_2(method, fn):
+    with pytest.raises(ValueError, match="invalid dtype"):
+        jacobi(fn, (1, 2), method=method)

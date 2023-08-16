@@ -269,5 +269,18 @@ def _first(method, f0, fn, x, i, h, args):
 
 def _wrap_function_if_needed(fn, fval):
     if not isinstance(fval, (float, np.ndarray)):
-        return lambda *args: np.asarray(fn(*args)), np.asarray(fval)
+        try:
+            fval = np.asarray(fval)
+        except ValueError as e:
+            raise ValueError(
+                "function return value cannot be converted into numpy array"
+            ) from e
+        fn_orig = fn
+        fn = lambda *args: np.asarray(fn_orig(*args))  # noqa
+    if isinstance(fval, np.ndarray) and fval.dtype.kind != "f":
+        msg = (
+            f"invalid dtype for function return value. "
+            f"Must be float, found '{fval.dtype}'"
+        )
+        raise ValueError(msg)
     return fn, fval

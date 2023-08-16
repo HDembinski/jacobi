@@ -26,10 +26,10 @@ def propagate(
     fn: callable
         Function that computes r = fn(x, [y, ...]). The arguments of the function are
         each allowed to be scalars or one-dimensional arrays. If the function accepts
-        several arguments, their uncertainties are treated as uncorrelated.
-        Functions that accept several correlated arguments must be wrapped, see examples.
-        The result of the function may be a scalar or a one-dimensional array with a
-        different lenth as the input.
+        several arguments, their uncertainties are treated as uncorrelated. Functions
+        that accept several correlated arguments must be wrapped, see examples. The
+        result of the function may be a scalar or a one-dimensional array of floats with
+        a different lenth as the input.
     x: float or array-like with shape (N,)
         Input vector. An array-like is converted before passing it to the callable.
     cov: float or array-like with shape (N,) or shape(N, N)
@@ -128,7 +128,12 @@ def propagate(
 
     x_a = np.asarray(x)
     cov_a = np.asarray(cov)
-    y_a = np.asarray(fn(x_a))
+    try:
+        y_a = np.asarray(fn(x_a))
+    except ValueError as e:
+        raise ValueError(
+            "function return value cannot be converted into numpy array"
+        ) from e
 
     # TODO lift this limitation
     if x_a.ndim > 1:
@@ -136,7 +141,7 @@ def propagate(
 
     # TODO lift this limitation
     if y_a.ndim > 1:
-        raise ValueError("f(x) must have dimension 0 or 1")
+        raise ValueError("function return value must have dimension 0 or 1")
 
     # TODO lift this limitation
     if cov_a.ndim > 2:

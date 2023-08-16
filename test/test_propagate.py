@@ -310,8 +310,32 @@ def test_mask_on_binary_function_2():
 
 
 @pytest.mark.parametrize("method", (None, -1, 0, 1))
-def test_non_array_arguments(method):
+@pytest.mark.parametrize("fn", (lambda x: (x[0], 2 * x[1], x[1]), lambda x: x[0]))
+def test_non_array_arguments_and_return_value(method, fn):
     def fn(x):
-        return [x[0], 2 * x[1], x[1]]
+        return [x[0], 2 * x[1], x[1] ** 3]
 
-    y, ycov = propagate(fn, (1, 2), ((1, 0), (0, 1)), method=method)
+    x = (1, 2)
+    xcov = ((1, 0), (0, 2))
+    y, ycov = propagate(fn, x, xcov, method=method)
+
+    j = np.array([[1, 0], [0, 2], [0, 3 * x[1] ** 2]])
+    ycov_ref = j @ xcov @ j.T
+
+    assert_allclose(y, [1, 4, 8])
+    assert_allclose(ycov, ycov_ref)
+
+
+@pytest.mark.parametrize("method", (None, -1, 0, 1))
+def test_bad_return_value_1(method):
+    with pytest.raises(
+        ValueError, match="function return value cannot be converted into numpy array"
+    ):
+        propagate(lambda x: [1, [1, 2]], (1, 2), ((1, 0), (0, 1)), method=method)
+
+
+@pytest.mark.parametrize("method", (None, -1, 0, 1))
+@pytest.mark.parametrize("fn", (lambda x: "s", lambda x: ("a", "b")))
+def test_bad_return_value_2(method, fn):
+    with pytest.raises(ValueError, match="invalid dtype"):
+        propagate(fn, (1, 2), ((1, 0), (0, 1)), method=method)
