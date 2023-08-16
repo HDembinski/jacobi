@@ -24,9 +24,9 @@ def jacobi(
     fn : Callable
         Function with the signature `fn(x, *args)`, where `x` is a number or a sequence
         of numbers and `*args` are optional auxiliary arguments. The function must
-        return a number or a sequence of numbers (ideally as a numpy array). The length
-        of `x` can differ from the output sequence.  Derivatives are only computed with
-        respect to `x`, the auxiliary arguments are ignored.
+        return a number or a regular shape of numbers (ideally as a numpy array). The
+        length of `x` can differ from the output sequence. Derivatives are only
+        computed with respect to `x`, the auxiliary arguments are ignored.
     x : Number or array of numbers
         The derivative is computed with respect to `x`. If `x` is an array, the Jacobi
         matrix is computed with respect to each element of `x`.
@@ -270,19 +270,13 @@ def _first(method, f0, fn, x, i, h, args):
 
 
 def _wrap_function_if_needed(fn, fval):
-    if not isinstance(fval, (float, np.ndarray)):
+    if not isinstance(fval, float):
         try:
-            fval = np.asarray(fval)
+            fval = np.asarray(fval, dtype=float)
         except ValueError as e:
             raise ValueError(
-                "function return value cannot be converted into numpy array"
+                "function return value cannot be converted into "
+                "1D numpy array of floats"
             ) from e
-        fn_orig = fn
-        fn = lambda *args: np.asarray(fn_orig(*args))  # noqa
-    if isinstance(fval, np.ndarray) and fval.dtype.kind != "f":
-        msg = (
-            f"invalid dtype for function return value. "
-            f"Must be float, found '{fval.dtype}'"
-        )
-        raise ValueError(msg)
+        return lambda *args: np.asarray(fn(*args)), fval
     return fn, fval

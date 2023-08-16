@@ -251,15 +251,9 @@ def test_non_array_arguments_and_return_value(method, fn):
 
 
 @pytest.mark.parametrize("method", (None, -1, 0, 1))
-def test_bad_return_value_1(method):
-    with pytest.raises(
-        ValueError, match="function return value cannot be converted into numpy array"
-    ):
-        jacobi(lambda x: [1, [1, 2]], (1, 2), method=method)
-
-
-@pytest.mark.parametrize("method", (None, -1, 0, 1))
-@pytest.mark.parametrize("fn", (lambda x: "s", lambda x: ("a", "b")))
+@pytest.mark.parametrize(
+    "fn", (lambda x: [1, [1, 2]], lambda x: "s", lambda x: ("a", "b"))
+)
 def test_bad_return_value_2(method, fn):
-    with pytest.raises(ValueError, match="invalid dtype"):
+    with pytest.raises(ValueError, match="function return value cannot be converted"):
         jacobi(fn, (1, 2), method=method)
