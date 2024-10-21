@@ -15,7 +15,7 @@
 repos:
 # Standard hooks
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.6.0
+  rev: v5.0.0
   hooks:
   - id: check-case-conflict
   - id: check-docstring-first
@@ -32,20 +32,20 @@ repos:
 
 # Ruff linter, replacement for flake8, isort, pydocstyle
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.4.5'
+  rev: 'v0.7.0'
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix]
 
 # Python formatting
 - repo: https://github.com/psf/black
-  rev: 24.4.2
+  rev: 24.10.0
   hooks:
   - id: black
 
 # Python type checking
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: 'v1.10.0'
+  rev: 'v1.12.1'
   hooks:
   - id: mypy
     args: [src]
