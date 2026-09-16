@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Many color libraries just need this variable to be set to any value.
+  # Set it to 3 to support 8-bit color graphics (256 colors per channel)
+  # for libraries that care about the value set.
+  FORCE_COLOR: 3
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # to check out the repository
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      - uses: astral-sh/setup-uv@v10.1.0
+
+      - uses: j178/prek-action@v3.0.0
+
+      - name: Run Pylint
+        run: uvx nox -s pylint -- --output-format=github
+
+  checks:
+    name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.runs-on }}
+    permissions:
+      contents: read # to check out the repository
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        runs-on: [ubuntu-latest]
+
+        include:
+          - python-version: "3.10"
+            runs-on: windows-latest
+          - python-version: "3.14"
+            runs-on: windows-latest
+          - python-version: "3.10"
+            runs-on: macos-latest
+          - python-version: "3.14"
+            runs-on: macos-latest
+          - python-version: "3.14t"
+            runs-on: ubuntu-latest
+          - python-version: "pypy-3.11"
+            runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        id: setup-python
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - uses: astral-sh/setup-uv@v10.1.0
+
+      - name: Install package
+        run: uv sync --group test
+        env:
+          UV_PYTHON: ${{ steps.setup-python.outputs.python-path }}
+
+      - name: Test package
+        run: uv run pytest -ra --cov --cov-report=term --durations=20
+
+  minimums:
+    name: Check minimums
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # to check out the repository
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v10.1.0
+
+      - name: Test with the lowest supported dependency versions
+        run: uvx nox -s minimums
+
+  pass:
+    if: always()
+    needs: [lint, checks, minimums]
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}

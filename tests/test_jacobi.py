@@ -1,6 +1,9 @@
-from numpy.testing import assert_allclose, assert_equal
+from __future__ import annotations
+
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose, assert_equal
+
 from jacobi import jacobi
 
 
@@ -64,9 +67,9 @@ def f7(x):
     "fn",
     [
         (lambda x: 1.0, lambda x: 0.0),
-        (lambda x: np.exp(x), lambda x: np.diagflat(np.exp(x))),
+        (np.exp, lambda x: np.diagflat(np.exp(x))),
         (lambda x: x**2, lambda x: np.diagflat(2 * x)),
-        (lambda x: np.ones_like(x), lambda x: np.diagflat(np.zeros_like(x))),
+        (np.ones_like, lambda x: np.diagflat(np.zeros_like(x))),
         (lambda x: x**-1, lambda x: np.diagflat(-(x**-2))),
         (lambda x: (x + 1) ** 0.5, lambda x: np.diagflat(0.5 * (x + 1) ** -0.5)),
         (f5, fd5),
@@ -138,7 +141,7 @@ def test_mask():
     assert_allclose(jac, jac_ref)
 
 
-@pytest.mark.parametrize("method", (-1, 0, 1))
+@pytest.mark.parametrize("method", [-1, 0, 1])
 def test_method(method):
     d = {}
     fp, fpe = jacobi(lambda x: x, 0, method=method, diagnostic=d)
@@ -173,7 +176,7 @@ def test_diagonal(x):
     assert_allclose(jac, fd1(np.atleast_1d(x), 3))
 
 
-@pytest.mark.parametrize("maxgrad", (0, 2, 5))
+@pytest.mark.parametrize("maxgrad", [0, 2, 5])
 def test_maxgrad(maxgrad):
     x = [1, 2, 3]
 
@@ -193,13 +196,13 @@ def test_rtol():
     assert_allclose(jac, jac_ref, rtol=0.03)
 
 
-@pytest.mark.parametrize("maxiter", (0, -1))
+@pytest.mark.parametrize("maxiter", [0, -1])
 def test_bad_maxiter(maxiter):
     with pytest.raises(ValueError):
         jacobi(f1, 1, 3, maxiter=maxiter)
 
 
-@pytest.mark.parametrize("maxgrad", (-1, -0.1))
+@pytest.mark.parametrize("maxgrad", [-1, -0.1])
 def test_bad_maxgrad(maxgrad):
     with pytest.raises(ValueError):
         jacobi(f1, 1, 3, maxgrad=maxgrad)
@@ -217,7 +220,7 @@ def test_bad_step_1(step):
         jacobi(f1, 1, 3, step=(0.25, step))
 
 
-@pytest.mark.parametrize("method", (-2, -3, 2, 3))
+@pytest.mark.parametrize("method", [-2, -3, 2, 3])
 def test_bad_method(method):
     with pytest.raises(ValueError, match="method"):
         jacobi(f1, 1, 3, method=method)
@@ -240,9 +243,8 @@ def test_on_nan():
     )
 
 
-@pytest.mark.parametrize("method", (None, -1, 0, 1))
-@pytest.mark.parametrize("fn", (lambda x: (x[0], 2 * x[1], x[1]), lambda x: x[0]))
-def test_non_array_arguments_and_return_value(method, fn):
+@pytest.mark.parametrize("method", [None, -1, 0, 1])
+def test_non_array_arguments_and_return_value(method):
     def fn(x):
         return [x[0], 2 * x[1], x[1] ** 2]
 
@@ -250,10 +252,69 @@ def test_non_array_arguments_and_return_value(method, fn):
     assert_allclose(j, [(1, 0), (0, 2), (0, 4)])
 
 
-@pytest.mark.parametrize("method", (None, -1, 0, 1))
+@pytest.mark.parametrize("method", [None, -1, 0, 1])
 @pytest.mark.parametrize(
-    "fn", (lambda x: [1, [1, 2]], lambda x: "s", lambda x: ("a", "b"))
+    "fn",
+    [lambda x: [1, [1, 2]], lambda x: "s", lambda x: ("a", "b")],
+    ids=["ragged", "str", "tuple_of_str"],
 )
 def test_bad_return_value_2(method, fn):
     with pytest.raises(ValueError, match="function return value cannot be converted"):
         jacobi(fn, (1, 2), method=method)
+
+
+@pytest.mark.parametrize("diagonal", [False, True])
+def test_empty_x(diagonal):
+    jac, jace = jacobi(np.exp, [], diagonal=diagonal)
+    assert jac.shape == ((0,) if diagonal else (0, 0))
+    assert jace.shape == jac.shape
+
+
+@pytest.mark.parametrize("diagonal", [False, True])
+def test_mask_selects_nothing(diagonal):
+    jac, jace = jacobi(np.exp, [1.0, 2.0], diagonal=diagonal, mask=[False, False])
+    assert_equal(jac, np.zeros((2,) if diagonal else (2, 2)))
+    assert_equal(jace, np.zeros_like(jac))
+
+
+@pytest.mark.parametrize("diagonal", [False, True])
+@pytest.mark.parametrize("x", [[], [1.0, 2.0]], ids=["empty", "nonempty"])
+@pytest.mark.parametrize(
+    "kwargs",
+    [{"maxiter": 0}, {"maxgrad": -1}, {"step": (0, 0.5)}, {"method": 5}],
+    ids=["maxiter", "maxgrad", "step", "method"],
+)
+def test_bad_arguments_on_all_paths(diagonal, x, kwargs):
+    # arguments are validated before any shortcut for empty or masked input
+    with pytest.raises(ValueError):
+        jacobi(np.exp, x, diagonal=diagonal, mask=np.zeros(len(x), bool), **kwargs)
+
+
+@pytest.mark.parametrize("diagonal", [False, True])
+def test_bad_mask(diagonal):
+    x = [1.0, 2.0, 3.0]
+    with pytest.raises(ValueError, match="boolean"):
+        jacobi(np.exp, x, diagonal=diagonal, mask=[0, 1, 1])
+    with pytest.raises(ValueError, match="shape"):
+        jacobi(np.exp, x, diagonal=diagonal, mask=[True, False])
+
+
+def test_large_x():
+    # regression test: fn used to be wrapped once per element of x, which hit
+    # the recursion limit for about 1000 elements
+    x = np.linspace(1, 2, 1000)
+    jac, jace = jacobi(np.exp, x)
+    assert_allclose(jac, np.diag(np.exp(x)))
+    assert_allclose(jace, 0, atol=1e-10)
+
+
+@pytest.mark.parametrize(
+    ("fn", "call_shape"),
+    [(lambda x: np.sum(x**2), (1, 2)), (lambda x: np.outer(x, x), (4, 2))],
+    ids=["scalar_output", "matrix_output"],
+)
+def test_diagnostic_output_ndim(fn, call_shape):
+    d = {}
+    jacobi(fn, [1.0, 2.0], diagnostic=d)
+    assert d["call"].shape == call_shape
+    assert np.all(d["call"] > 0)

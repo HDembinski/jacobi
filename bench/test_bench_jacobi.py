@@ -1,6 +1,9 @@
-from jacobi import jacobi
-import pytest
+from __future__ import annotations
+
 import numpy as np
+import pytest
+
+from jacobi import jacobi
 
 fn = ["0", "x ** 2", "x ** -1", "exp(x)", "sin(x)", "ones_like(x)", "mean(x ** 2)"]
 

@@ -1,5 +1,8 @@
-from matplotlib import pyplot as plt
+from __future__ import annotations
+
 import numpy as np
+from matplotlib import pyplot as plt
+
 from jacobi import jacobi
 
 
@@ -28,4 +31,4 @@ plt.fill_between(
 )
 plt.legend()
 
-plt.savefig("doc/_static/example.svg")
+plt.savefig("docs/_static/example.svg")

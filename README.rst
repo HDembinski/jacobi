@@ -6,6 +6,8 @@
 
 .. image:: https://img.shields.io/pypi/v/jacobi
    :target: https://pypi.org/project/jacobi
+.. image:: https://github.com/hdembinski/jacobi/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/hdembinski/jacobi/actions/workflows/ci.yml
 .. image:: https://img.shields.io/badge/github-docs-success
    :target: https://hdembinski.github.io/jacobi
 .. image:: https://img.shields.io/badge/github-source-blue
@@ -86,6 +88,7 @@ Examples
       r[1] = gamma(x[1] ** 3.1)
       r[2] = np.polyval([1, 2, 3], x[0])
       return r  # x and r have different lengths
+
 
   # fn accepts a parameter vector x, which has an associated covariance matrix xcov
   x = [1.0, 2.0]

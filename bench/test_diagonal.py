@@ -1,9 +1,12 @@
-from jacobi import jacobi, propagate
+from __future__ import annotations
+
 import numpy as np
 import pytest
 
+from jacobi import jacobi, propagate
 
-@pytest.mark.parametrize("diagonal", (False, True))
+
+@pytest.mark.parametrize("diagonal", [False, True])
 def test_jacobi(diagonal, benchmark):
     x = np.linspace(0, 1, 100)
 
@@ -16,7 +19,7 @@ def test_jacobi(diagonal, benchmark):
     benchmark(run)
 
 
-@pytest.mark.parametrize("diagonal", (False, True))
+@pytest.mark.parametrize("diagonal", [False, True])
 def test_propagate(diagonal, benchmark):
     x = np.linspace(0, 1, 100)
 
@@ -29,7 +32,7 @@ def test_propagate(diagonal, benchmark):
     benchmark(run)
 
 
-@pytest.mark.parametrize("diagonal", (False, True))
+@pytest.mark.parametrize("diagonal", [False, True])
 def test_propagate_2dcov(diagonal, benchmark):
     x = np.linspace(0, 1, 100)
 

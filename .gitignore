@@ -1,23 +1,44 @@
-dist
-*.so
-MANIFEST
+# Byte-compiled / optimized / DLL files
+__pycache__/
 *.py[cod]
-*.egg-info
-.mypy_cache
-.benchmarks
-.DS_Store
-_build
-_generate
-build
-__pycache__
-Pipfile.lock
-.eggs
-py37
-var
-venv
-.pytest_cache
-notebook/.ipynb_checkpoints
-src/jacobi/_version.py
-doc/index.rst
-.vscode
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+uv.lock
+
+# Unit test / coverage reports
+htmlcov/
 .coverage
+.coverage.*
+coverage.xml
+.pytest_cache/
+.benchmarks/
+.nox/
+
+# Linters and type checkers
+.mypy_cache/
+.ruff_cache/
+
+# Generated files
+src/jacobi/_version.py
+docs/index.rst
+docs/_build/
+
+# Editors and OS files
+.vscode/
+.idea/
+.DS_Store
+notebook/.ipynb_checkpoints

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import numpy as np
-from numpy.testing import assert_allclose
-from jacobi import propagate, jacobi
 import pytest
-from numpy.testing import assert_equal
+from numpy.testing import assert_allclose, assert_equal
+
+from jacobi import jacobi, propagate
 
 
 def test_00():
@@ -77,9 +79,9 @@ def test_11():
         assert_allclose(ycov, np.linalg.multi_dot([jac, xcov2, jac.T]))
 
 
-@pytest.mark.parametrize("ndim", (1, 2))
-@pytest.mark.parametrize("diagonal", (False, True))
-@pytest.mark.parametrize("len", (1, 2))
+@pytest.mark.parametrize("ndim", [1, 2])
+@pytest.mark.parametrize("diagonal", [False, True])
+@pytest.mark.parametrize("len", [1, 2])
 def test_cov_1d_2d(ndim, diagonal, len):
     def fn(x):
         return 2 * x
@@ -109,6 +111,8 @@ def test_two_arguments_1():
     z, zcov = propagate(fn1, x, xcov, y, ycov)
     assert z.ndim == 0
     assert zcov.ndim == 0
+    # a scalar result must behave like a float for callers
+    assert isinstance(zcov, float)
 
     def fn2(r):
         return fn1(r[0], r[1])
@@ -172,7 +176,7 @@ def test_diagonal_1():
     x = 2
     xcov = 3
 
-    y, ycov = propagate(fn, x, xcov, diagonal=True)
+    _y, ycov = propagate(fn, x, xcov, diagonal=True)
 
     assert ycov.ndim == 0
     assert_allclose(ycov, fprime(x) ** 2 * xcov)
@@ -287,7 +291,7 @@ def test_mask_on_binary_function_1():
         return a * b
 
     mask = [False, True]
-    c, c_var = propagate(f, a, a_var, b, b_var, mask=mask)
+    _c, c_var = propagate(f, a, a_var, b, b_var, mask=mask)
 
     assert c_var[0] == 0
     assert c_var[1] > 0
@@ -303,15 +307,14 @@ def test_mask_on_binary_function_2():
         return np.outer(a, b).ravel()
 
     mask = [[False, True], [True, False, True]]
-    c1, c1_var = propagate(f, a, a_var, b, b_var, mask=mask)
-    c2, c2_var = propagate(f, a, a_var, b, b_var)
+    _c1, c1_var = propagate(f, a, a_var, b, b_var, mask=mask)
+    _c2, c2_var = propagate(f, a, a_var, b, b_var)
 
     assert np.sum(np.diag(c2_var) > np.diag(c1_var)) > 0
 
 
-@pytest.mark.parametrize("method", (None, -1, 0, 1))
-@pytest.mark.parametrize("fn", (lambda x: (x[0], 2 * x[1], x[1]), lambda x: x[0]))
-def test_non_array_arguments_and_return_value(method, fn):
+@pytest.mark.parametrize("method", [None, -1, 0, 1])
+def test_non_array_arguments_and_return_value(method):
     def fn(x):
         return [x[0], 2 * x[1], x[1] ** 3]
 
@@ -326,10 +329,61 @@ def test_non_array_arguments_and_return_value(method, fn):
     assert_allclose(ycov, ycov_ref)
 
 
-@pytest.mark.parametrize("method", (None, -1, 0, 1))
+@pytest.mark.parametrize("method", [None, -1, 0, 1])
 @pytest.mark.parametrize(
-    "fn", (lambda x: [1, [1, 2]], lambda x: "s", lambda x: ("a", "b"))
+    "fn",
+    [lambda x: [1, [1, 2]], lambda x: "s", lambda x: ("a", "b")],
+    ids=["ragged", "str", "tuple_of_str"],
 )
 def test_bad_return_value_2(method, fn):
     with pytest.raises(ValueError, match="function return value cannot be converted"):
         propagate(fn, (1, 2), ((1, 0), (0, 1)), method=method)
+
+
+def test_two_arguments_mixed_cov_dimensions():
+    # a diagonal (1D) covariance followed by a full (2D) one and vice versa
+    # must give the same result as the equivalent single-argument call
+    def fn1(x, y):
+        return x * y
+
+    x = [1.0, 2.0]
+    xcov = [0.1, 0.2]
+    y = [3.0, 4.0]
+    ycov = [[0.3, 0.05], [0.05, 0.4]]
+
+    z1, zcov1 = propagate(fn1, x, xcov, y, ycov)
+    z2, zcov2 = propagate(lambda y, x: fn1(x, y), y, ycov, x, xcov)
+
+    def fn2(r):
+        return fn1(r[:2], r[2:])
+
+    r = [*x, *y]
+    rcov = np.zeros((4, 4))
+    rcov[:2, :2] = np.diag(xcov)
+    rcov[2:, 2:] = ycov
+    z_ref, zcov_ref = propagate(fn2, r, rcov)
+
+    assert_allclose(z1, z_ref)
+    assert_allclose(z2, z_ref)
+    assert_allclose(zcov1, zcov_ref)
+    assert_allclose(zcov2, zcov_ref)
+
+
+@pytest.mark.parametrize("diagonal", [False, True])
+def test_fully_masked_argument(diagonal):
+    # argument a is exactly known, only b contributes to the uncertainty
+    def f(a, b):
+        return a * b
+
+    a = np.array([1.0, 2.0])
+    a_var = np.array([0.1, 0.1])
+    b = np.array([3.0, 4.0])
+    b_var = np.array([0.2, 0.3])
+
+    mask = [[False, False], [True, True]]
+    c, c_var = propagate(f, a, a_var, b, b_var, mask=mask, diagonal=diagonal)
+
+    assert_allclose(c, a * b)
+    if c_var.ndim == 2:
+        c_var = np.diag(c_var)
+    assert_allclose(c_var, a**2 * b_var)

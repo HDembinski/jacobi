@@ -1,7 +1,10 @@
-from matplotlib import pyplot as plt
+from __future__ import annotations
+
 import numpy as np
-from jacobi import jacobi
+from matplotlib import pyplot as plt
 from numdifftools import Derivative
+
+from jacobi import jacobi
 
 
 # function of one variable with auxiliary argument; returns a vector
@@ -29,4 +32,4 @@ plt.ylim(1e-17, 1e-13)
 plt.ylabel("$|f'_\\mathrm{num}(x) - f'(x)|$")
 plt.axhline(np.finfo(float).resolution, color="k", ls="--")
 
-plt.savefig("doc/_static/precision.svg")
+plt.savefig("docs/_static/precision.svg")

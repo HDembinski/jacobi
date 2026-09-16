@@ -1,21 +1,30 @@
-from typing import Callable, Union, Tuple, List
-from ._typing import Indexable
-from ._jacobi import jacobi
+"""Numerical error propagation based on the Jacobi matrix."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 
+from ._jacobi import jacobi
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from numpy.typing import ArrayLike, NDArray
 
 __all__ = ["propagate"]
 
 
 def propagate(
-    fn: Callable,
-    x: Union[float, Indexable[float]],
-    cov: Union[float, Indexable[float], Indexable[Indexable[float]]],
-    *args,
-    **kwargs,
-) -> Tuple[np.ndarray, np.ndarray]:
+    fn: Callable[..., ArrayLike],
+    x: ArrayLike,
+    cov: ArrayLike,
+    *args: ArrayLike,
+    **kwargs: Any,
+) -> tuple[NDArray[Any], NDArray[Any]]:
     """
-    Numerically propagates the covariance of function inputs to function outputs.
+    Numerically propagate the covariance of function inputs to function outputs.
 
     The function computes C' = J C J^T, where C is the covariance matrix of the input,
     C' the matrix of the output, and J is the Jacobi matrix of first derivatives of the
@@ -23,23 +32,23 @@ def propagate(
 
     Parameters
     ----------
-    fn: callable
+    fn : callable
         Function with the signature `fn(x, [y, ...])`, where `x` is a number or a
         sequence of numbers, likewise if other arguments are present they must have the
         same format. The function must return a number or a sequence of numbers (ideally
         as a numpy array). The length of `x` can differ from the output sequence. The
         function should accept more than one argument only if there are no
         correlations between these arguments. See example below for use cases.
-    x: float or array-like with shape (N,)
+    x : float or array-like with shape (N,)
         Input vector. An array-like is converted before passing it to the callable.
-    cov: float or array-like with shape (N,) or shape(N, N)
+    cov : float or array-like with shape (N,) or shape (N, N)
         Covariance matrix of input vector. If the array is one-dimensional, it is
         interpreted as the diagonal of a covariance matrix with zero off-diagonal
         elements.
-    *args:
-        If the function accepts several arguments that are mutually independent, these
+    *args : tuple
+        If the function accepts several arguments that are mutually independent, it
         is possible to pass those values and covariance matrices pairwise, see examples.
-    **kwargs:
+    **kwargs : dict
         Extra arguments are passed to :func:`jacobi`.
 
     Returns
@@ -47,14 +56,14 @@ def propagate(
     y, ycov
         y is the result of fn(x).
         ycov is the propagated covariance matrix.
-        If ycov is a matrix, unless y is a number. In that case, ycov is also
+        ycov is a matrix, unless y is a number. In that case, ycov is also
         reduced to a number.
 
     Notes
     -----
     For callables `fn` which perform only element-wise computation, the jacobian is
     a diagonal matrix. This special case is detected and the computation optimised,
-    although can further speed up the computation by passing the argument
+    although one can further speed up the computation by passing the argument
     `diagonal=True`.
 
     In this special case, error propagation works correctly even if the output of `fn`
@@ -65,10 +74,9 @@ def propagate(
     General error propagation maps input vectors to output vectors.
 
     >>> def fn(x):
-    ...     return x ** 2 + 1
+    ...     return x**2 + 1
     >>> x = [1, 2]
-    >>> xcov = [[3, 1],
-    ...         [1, 4]]
+    >>> xcov = [[3, 1], [1, 4]]
     >>> y, ycov = propagate(fn, x, xcov)
 
     In the previous example, the function ``y = fn(x)`` treats all x values
@@ -82,7 +90,7 @@ def propagate(
     accepts several arguments, their uncertainties are treated as uncorrelated.
 
     >>> def fn(x, y):
-    ...    return x + y
+    ...     return x + y
     >>> x = 1
     >>> y = 2
     >>> xcov = 2
@@ -105,9 +113,10 @@ def propagate(
     """
     if args:
         if len(args) % 2 != 0:
-            raise ValueError("number of extra positional arguments must be even")
+            msg = "number of extra positional arguments must be even"
+            raise ValueError(msg)
 
-        args_a = [np.asarray(_) for _ in ((x, cov) + args)]
+        args_a = [np.asarray(arg) for arg in (x, cov, *args)]
         x_parts = args_a[::2]
         cov_parts = args_a[1::2]
         y_a = np.asarray(fn(*x_parts))
@@ -118,26 +127,34 @@ def propagate(
     try:
         y_a = np.asarray(fn(x_a))
     except ValueError as e:
-        raise ValueError(
-            "function return value cannot be converted into numpy array"
-        ) from e
+        msg = "function return value cannot be converted into numpy array"
+        raise ValueError(msg) from e
 
     # TODO lift this limitation
     if x_a.ndim > 1:
-        raise ValueError("x must have dimension 0 or 1")
+        msg = "x must have dimension 0 or 1"
+        raise ValueError(msg)
 
     # TODO lift this limitation
     if y_a.ndim > 1:
-        raise ValueError("function return value must have dimension 0 or 1")
+        msg = "function return value must have dimension 0 or 1"
+        raise ValueError(msg)
 
     # TODO lift this limitation
     if cov_a.ndim > 2:
-        raise ValueError("cov must have dimension 0, 1, or 2")
+        msg = "cov must have dimension 0, 1, or 2"
+        raise ValueError(msg)
 
     return _propagate(fn, y_a, x_a, cov_a, **kwargs)
 
 
-def _propagate(fn: Callable, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **kwargs):
+def _propagate(
+    fn: Callable[..., Any],
+    y: NDArray[Any],
+    x: NDArray[Any],
+    xcov: NDArray[Any],
+    **kwargs: Any,
+) -> tuple[NDArray[Any], NDArray[Any]]:
     _check_x_xcov_compatibility(x, xcov)
 
     jac = jacobi(fn, x, **kwargs)[0]
@@ -151,7 +168,7 @@ def _propagate(fn: Callable, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **k
         # contain NaN values.
         jac = _try_reduce_jacobian(jac)
     elif not diagonal:
-        jac.shape = (y.size, x.size)
+        jac = jac.reshape(y.size, x.size)
 
     ycov = _jac_cov_product(jac, xcov)
 
@@ -162,15 +179,15 @@ def _propagate(fn: Callable, y: np.ndarray, x: np.ndarray, xcov: np.ndarray, **k
 
 
 def _propagate_independent(
-    fn: Callable,
-    y: np.ndarray,
-    x_parts: List[np.ndarray],
-    xcov_parts: List[np.ndarray],
-    **kwargs,
-):
-    ycov: Union[float, np.ndarray] = 0
+    fn: Callable[..., Any],
+    y: NDArray[Any],
+    x_parts: list[NDArray[Any]],
+    xcov_parts: list[NDArray[Any]],
+    **kwargs: Any,
+) -> tuple[NDArray[Any], NDArray[Any]]:
+    ycov: NDArray[Any] | None = None
 
-    mask = kwargs.get("mask", None)
+    mask = kwargs.get("mask")
     mask_parts = []
     if mask is None:
         kwargs2 = kwargs
@@ -183,54 +200,69 @@ def _propagate_independent(
             elif np.shape(x) == np.shape(mask):
                 mask_parts.append(mask)
             else:
-                raise ValueError("mask shapes do not match arguments")
+                msg = "mask shapes do not match arguments"
+                raise ValueError(msg)
 
     for i, x in enumerate(x_parts):
-
-        def wrapped(x):
-            args = x_parts[:i] + [x] + x_parts[i + 1 :]
-            return fn(*args)
-
+        wrapped = _fix_other_arguments(fn, x_parts, i)
         xcov = xcov_parts[i]
 
         if mask_parts:
             kwargs2["mask"] = mask_parts[i]
 
         yc = _propagate(wrapped, y, x, xcov, **kwargs2)[1]
-        if np.ndim(ycov) == 2 and yc.ndim == 1:
-            for i, yci in enumerate(yc):
-                ycov[i, i] += yci  # type:ignore
+        if ycov is None:
+            ycov = np.array(yc)
+        elif ycov.ndim == 2 and yc.ndim == 1:
+            ycov[np.diag_indices_from(ycov)] += yc
+        elif ycov.ndim == 1 and yc.ndim == 2:
+            ycov = np.diag(ycov) + yc
         else:
-            ycov += yc
+            ycov = ycov + yc
+
+    if ycov is None:
+        msg = "at least one pair of value and covariance must be passed"
+        raise ValueError(msg)
 
     return y, ycov
 
 
-def _jac_cov_product(jac: np.ndarray, xcov: np.ndarray):
+def _fix_other_arguments(
+    fn: Callable[..., Any], x_parts: list[NDArray[Any]], i: int
+) -> Callable[[NDArray[Any]], Any]:
+    def wrapped(x: NDArray[Any]) -> Any:
+        return fn(*x_parts[:i], x, *x_parts[i + 1 :])
+
+    return wrapped
+
+
+def _jac_cov_product(jac: NDArray[Any], xcov: NDArray[Any]) -> NDArray[Any]:
     # if jac or xcov are 1D, they represent diagonal matrices
     if xcov.ndim == 2:
         if jac.ndim == 2:
-            return np.einsum("ij,kl,jl", jac, jac, xcov)
+            return np.asarray(np.einsum("ij,kl,jl", jac, jac, xcov))
         if jac.ndim == 1:
-            return np.einsum("i,j,ij -> ij", jac, jac, xcov)
-        return jac**2 * xcov
+            return np.asarray(np.einsum("i,j,ij -> ij", jac, jac, xcov))
+        return np.asarray(jac**2 * xcov)
     assert xcov.ndim < 2
     if jac.ndim == 2:
         if xcov.ndim == 1:
-            return np.einsum("ij,kj,j", jac, jac, xcov)
+            return np.asarray(np.einsum("ij,kj,j", jac, jac, xcov))
         assert xcov.ndim == 0  # xcov.ndim == 2 is already covered above
-        return np.einsum("ij,kj", jac, jac) * xcov
-    assert jac.ndim < 2 and xcov.ndim < 2
-    return xcov * jac**2
+        return np.asarray(np.einsum("ij,kj", jac, jac) * xcov)
+    assert jac.ndim < 2
+    assert xcov.ndim < 2
+    return np.asarray(xcov * jac**2)
 
 
-def _check_x_xcov_compatibility(x: np.ndarray, xcov: np.ndarray):
+def _check_x_xcov_compatibility(x: NDArray[Any], xcov: NDArray[Any]) -> None:
     if xcov.ndim > 0 and len(xcov) != (len(x) if x.ndim == 1 else 1):
         # this works for 1D and 2D xcov
-        raise ValueError("x and cov have incompatible shapes")
+        msg = "x and cov have incompatible shapes"
+        raise ValueError(msg)
 
 
-def _try_reduce_jacobian(jac: np.ndarray):
+def _try_reduce_jacobian(jac: NDArray[Any]) -> NDArray[Any]:
     if jac.ndim != 2 or jac.shape[0] != jac.shape[1]:
         return jac
     # if jacobian contains only off-diagonal elements
@@ -243,7 +275,7 @@ def _try_reduce_jacobian(jac: np.ndarray):
     return jac
 
 
-def _nodiag_view(a: np.ndarray):
+def _nodiag_view(a: NDArray[Any]) -> NDArray[Any]:
     # https://stackoverflow.com/a/43761941/ @Divakar
     m = a.shape[0]
     p, q = a.strides
