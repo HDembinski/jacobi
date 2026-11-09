@@ -3,7 +3,6 @@ from ._typing import Indexable
 from ._jacobi import jacobi
 import numpy as np
 
-
 __all__ = ["propagate"]
 
 
@@ -199,7 +198,7 @@ def _propagate_independent(
         yc = _propagate(wrapped, y, x, xcov, **kwargs2)[1]
         if np.ndim(ycov) == 2 and yc.ndim == 1:
             for i, yci in enumerate(yc):
-                ycov[i, i] += yci  # type:ignore
+                ycov[i, i] += yci  # type: ignore
         else:
             ycov += yc
 
